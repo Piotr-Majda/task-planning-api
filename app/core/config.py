@@ -7,8 +7,15 @@ load_dotenv()
 
 class Config(BaseSettings):
 
-    def __init__(self) -> None:
-        self.app_name = 'Task Scheduler API'
+    app_name: str = "TaskSchedulerAPI"
+    debug: bool = False
+    db_user: str = ""
+    db_password: str = ""
+    db_name: str = "task.db"
+
+    @property
+    def db_url(self):
+        return f"sqlite:///./{self.db_name}"
 
 
 config = Config()
