@@ -1,16 +1,21 @@
-from sqlalchemy import String, create_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy import ForeignKey, Integer, String, Column
+from sqlalchemy.orm import DeclarativeBase, relationship
 
-from app.core.config import config
-
-engine = create_engine(config.db_url)
-SessionLocal = sessionmaker(autoflush=False)
 
 class Base(DeclarativeBase):
     pass
 
+
+class User(Base):
+    __tablename__ = 'user'
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    tasks = relationship('Task', back_populates='user')
+
 class Task(Base):
     __tablename__ = 'tasks'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String, index=True)
+    id= Column(Integer, primary_key=True)
+    name = Column(String(30), nullable=False)
+    assigned_user_id = Column(Integer, ForeignKey('user.id'))
+    user = relationship('User', back_populates='tasks')

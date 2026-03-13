@@ -6,5 +6,5 @@ class TaskCreate(BaseModel):
 
 
 class TaskRead(BaseModel):
-    id: str
+    id: int
     name: str

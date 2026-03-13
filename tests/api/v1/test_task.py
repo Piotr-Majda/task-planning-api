@@ -1,20 +1,6 @@
-from fastapi.testclient import TestClient
-
-from app.api.v1.tasks import get_task_service
-from app.main import app
-from app.services.task_service import TaskService
-from tests.test_db import TestingSessionLocal
 
 
-client = TestClient(app)
-
-def override_get_task_service():
-    session = TestingSessionLocal()
-    yield TaskService(session=session)
-
-app.dependency_overrides[get_task_service] = override_get_task_service
-
-def test_create_and_get_task():
+def test_create_and_get_task(client):
     r = client.post("/api/v1/tasks", json={"name": "Test Task"})
     assert r.status_code == 200
     created_task = r.json()

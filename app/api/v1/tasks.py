@@ -1,13 +1,16 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, Form, HTTPException
-from app.db.schema import SessionLocal
+from sqlalchemy.orm import Session
+from app.db.session import get_db
 from app.models.tasks import TaskCreate, TaskRead
 from app.services.task_service import TaskService
 
 router = APIRouter()
 
-def get_task_service() -> TaskService:
-    return TaskService(session=SessionLocal())
+
+def get_task_service(db: Session = Depends(get_db)):
+    return TaskService(db)
+
 
 task_service_dep = Annotated[TaskService, Depends(get_task_service)]
 
