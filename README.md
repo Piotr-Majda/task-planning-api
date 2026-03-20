@@ -1,144 +1,201 @@
-# Task Planning API
+# 📌 Task Planning API
 
+## 🧭 Overview
+Task Planning API is a system that allows users to manage tasks in a **tree-based structure** within projects.  
+It supports task hierarchy, deadlines, and status tracking to better organize related work.
 
-# Przejdziemy przez 5 etapów:
+---
 
-1️⃣ System Vision
-2️⃣ Functional requirments
-3️⃣ Non-functional requirments
-4️⃣ Domain model
-5️⃣ API endpoints
+## 🧱 System Design Stages
 
-# 1. System Vision [This can be change later]
-- Purpose [ value he brings ]
-    System allow Users manage tasks in structure [Tree based] way with deadlines and status
-    which allow to manage related task easily in project scope
-- who use system ? 
-    One User on start later we will see.
-- this is system for one or many users ?
-    User - personal user - later maybe team
-- task are manual or automatic ?
-    task are manual on first interation later maybe also automatic
-- task are made to be done once or freqently also ?
-    task have it own status TODO, IN_PROGRESS, DONE
-- task can have parent and childs
-- task are in tree hierachi
-- task are assaing to project
-- task has deadline, priority, content, status
-- project has owner and members as user ( later on i will not focus on user and auth policy right now )
+1. System Vision  
+2. Functional Requirements  
+3. Non-Functional Requirements  
+4. Domain Model  
+5. API Endpoints  
 
-# 2. Functional requirments
-- User can create task
-- User can assign/change parent task
-- User can change task status to TODO, IN_PROGRESS, DONE (only if subtasks are done also)
-- User can view task hierachy
-- User can deleted task, optional with subtasks [ task with out parent are still has assaing to project ]
-- User can see all task in given project
-- User can see all task with parent
+---
 
-# Non-functional requirments
-- System should support pagination (10 items default)
+## 1️⃣ System Vision
+
+### 🎯 Purpose
+The system enables users to manage tasks in a hierarchical (tree-based) structure with deadlines and statuses, making it easier to organize related tasks within a project.
+
+### 👤 Users
+- Initially: single user  
+- Future: multi-user (teams)
+
+### ⚙️ Task Characteristics
+- Tasks are **manual** (future: automatic)
+- Tasks have statuses:
+  - `TODO`
+  - `IN_PROGRESS`
+  - `DONE`
+- Tasks can:
+  - have a parent
+  - have multiple children
+- Tasks belong to a project
+- Tasks include:
+  - deadline
+  - priority
+  - content
+
+### 📁 Project
+- Has an owner (User)
+- Has members (Users)
+- Contains tasks
+
+---
+
+## 2️⃣ Functional Requirements
+
+- User can create a task  
+- User can assign or change a parent task  
+- User can change task status (`TODO`, `IN_PROGRESS`, `DONE`)  
+  - Only if all subtasks are `DONE`  
+- User can view task hierarchy  
+- User can delete a task  
+  - Children tasks will have `parent_id = null`  
+- User can list all tasks in a project  
+- User can list tasks by parent  
+
+---
+
+## 3️⃣ Non-Functional Requirements / Business Rules
+
+- Deleting a parent task does **not delete children**
+- Child tasks remain assigned to the same project
+- Parent task must be manually updated to `DONE`
+- System must prevent cycles in task hierarchy
+- Pagination: default 10 items per page
 - System should handle large task trees efficiently
 
-# Domain model
-## Entities:
-- User 
-{
-    id int, 
-    name char, 
-}
-- Project 
-{
-    id int, 
-    name char, 
-    owner_id nullable/int, 
-}
-- Task 
-{
-    id int, 
-    name char, 
-    content char, 
-    status char,
-    priority int
-    deadline datetime, 
-    parent_id nullable int, 
-    project_id int not null
-}
+---
 
-- ProjectMember
+## 4️⃣ Domain Model
+
+### 🧩 Entities
+
+#### User
+```json
 {
-    user_id int
-    project_id int
+  "id": "int",
+  "name": "string"
 }
-## Relations:
-- User <-> Project(members)
-- User -> Project(owner)
-- Project -> Task(project)
-- Task(parent) -> Task(subtask)
-# API endpoints
-## Tasks
-- create task
-POST /tasks 
-JSON
+```
+#### Project
+```json
 {
-    'content': '', 
-    'deadline': '', 
-    'priority': 'MINOR'
+  "id": "int",
+  "name": "string",
+  "owner_id": "int | null"
 }
-- get task
+```
+#### Task
+```json
+{
+  "id": "int",
+  "name": "string",
+  "content": "string",
+  "status": "TODO | IN_PROGRESS | DONE",
+  "priority": "BLOCKER | CRITICAL | MAJOR | MINOR",
+  "deadline": "datetime",
+  "parent_id": "int | null",
+  "project_id": "int"
+}
+```
+#### ProjectMember
+```json
+{
+  "user_id": "int",
+  "project_id": "int"
+}
+```
+Constraint: (user_id, project_id) must be unique
+### 🔗 Relationships
+- User ↔ Project (many-to-many via ProjectMember)
+- User → Project (owner)
+- Project → Task (one-to-many)
+- Task → Task (self-relation, parent → children)
+## 5️⃣ API Endpoints
+### 📌 Tasks
+#### Create Task
+POST /tasks
+```json
+{
+  "name": "Task name",
+  "content": "desc",
+  "project_id": 1,
+  "parent_id": null,
+  "deadline": "2026-03-20T10:00:00",
+  "priority": "MINOR"
+}
+```
+#### Get Task
 GET /tasks/{id}
-- list tasks
-GET /tasks/
-- list task with filter status, project id and sorting by deadline
+#### List Tasks
+GET /tasks
+#### Filter Tasks
 GET /tasks?status=TODO&project_id=1&sort=deadline
-- edit task
-PATCH /tasks/{id} 
-JSON
+#### Update Tasks
+PATCH /tasks/{id}
+```json
 {
-    'content': '', 
-    'deadline': '', 
-    'priority': 'BLOCKER/CRITICAL/MAJOR/MINOR',  
-    'status': 'TODO/IN_PROGRES/DONE'
+  "content": "desc",
+  "deadline": "2026-03-20T10:00:00",
+  "priority": "MAJOR",
+  "status": "IN_PROGRESS"
 }
-- delete task
+```
+#### Delete Task
 DELETE /tasks/{id}
 
-## Projects
-- add project
-POST /projects 
-JSON
+### 📌 Projects
+#### Create Project
+POST /projects
+```json
 {
-    'name': 'Telecom'
+    "name": "Telecom"
 }
-- assaing Onner
-PATCH /projects/{id} 
-JSON
+```
+#### Assign Owner
+PATCH /projects/{id}
+```json
 {
-    'owner_id': 1
+  "owner_id": 1
 }
-- add Member
-PATCH /projects/{id} 
-JSON
+```
+#### Add Member
+PATCH /projects/{id}/add_member
+```json
 {
-    'members_id: "1"
+  "user_id": 1
 }
-- get project
+```
+#### Remove Member
+PATCH /projects/{id}/remove_member
+```json
+{
+  "user_id": 1
+}
+```
+#### Get Project
 GET /projects/{id}
-- list projects
+#### List Projects
 GET /projects
-- remove projects
+#### Delete Project
 DELETE /projects/{id}
-
-## User
-- create user
-POST /users 
-JSON
+### Users
+#### Create User
+POST /users
+```json
 {
-    'name': 'Jhon'
+  "name": "John"
 }
-- get user
+```
+#### Get User
 GET /users/{id}
-- list users
-GET /users
-- remove user
+#### List Users
+GET /users/{id}
+#### Delete User
 DELETE /users/{id}
