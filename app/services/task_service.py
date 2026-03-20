@@ -1,7 +1,9 @@
+from datetime import datetime, timedelta
 from typing import List
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.schema import Task
+from app.db.schema import Task, TaskPriority, TaskStatus
 
 
 class TaskService:
@@ -15,7 +17,8 @@ class TaskService:
         return self._db.query(Task).filter(Task.id == user_id).first()
     
     def create_task(self, name: str) -> Task:
-        task = Task(name=name)
+        deadline = datetime.now()  + timedelta(days=10)
+        task = Task(name=name, content="", status=TaskStatus.TODO, priority=TaskPriority.MINOR, deadline=deadline)
         self._db.add(task)
         self._db.commit()
         self._db.refresh(task)
