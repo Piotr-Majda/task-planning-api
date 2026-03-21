@@ -1,7 +1,7 @@
 FROM python:3.14-slim AS base
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
-        build-essential && \
+    build-essential curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install uv
