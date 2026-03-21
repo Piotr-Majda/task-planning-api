@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import Annotated, List
 from sqlalchemy import Enum, ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column
-from app.core.config import TaskPriority, TaskStatus
+from app.domain.enums import TaskPriority, TaskStatus
+from app.domain.constants import CONTENT_MAX_LEN, NAME_MAX_LEN
 
-NameAttr = Annotated[str, mapped_column(String(30), nullable=False)]
+NameAttr = Annotated[str, mapped_column(String(NAME_MAX_LEN), nullable=False)]
 IdAttr = Annotated[int, mapped_column(primary_key=True)]
 
 
@@ -16,7 +17,7 @@ class Task(Base):
     __tablename__ = 'tasks'
     id: Mapped[IdAttr]
     name: Mapped[NameAttr]
-    content: Mapped[str] = mapped_column(String(500))
+    content: Mapped[str] = mapped_column(String(CONTENT_MAX_LEN))
     status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus, name='task_status'))
     priority: Mapped[TaskPriority] = mapped_column(Enum(TaskPriority, name='task_priority'))
     parent_id: Mapped[int | None] = mapped_column(ForeignKey('tasks.id'), nullable=True)
