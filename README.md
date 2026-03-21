@@ -28,9 +28,9 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 ### ⚙️ Task Characteristics
 - Tasks are **manual** (future: automatic)
 - Tasks have statuses:
-  - `TODO`
-  - `IN_PROGRESS`
-  - `DONE`
+  - `todo`
+  - `in_progress`
+  - `done`
 - Tasks can:
   - have a parent
   - have multiple children
@@ -51,8 +51,8 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 
 - User can create a task  
 - User can assign or change a parent task  
-- User can change task status (`TODO`, `IN_PROGRESS`, `DONE`)  
-  - Only if all subtasks are `DONE`  
+- User can change task status (`todo`, `in_progress`, `done`)  
+  - Only if all subtasks are `done`  
 - User can view task hierarchy  
 - User can delete a task  
   - Children tasks will have `parent_id = null`  
@@ -65,7 +65,7 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 
 - Deleting a parent task does **not delete children**
 - Child tasks remain assigned to the same project
-- Parent task must be manually updated to `DONE`
+- Parent task must be manually updated to `done`
 - System must prevent cycles in task hierarchy
 - Pagination: default 10 items per page
 - System should handle large task trees efficiently
@@ -97,8 +97,8 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
   "id": "int",
   "name": "string",
   "content": "string",
-  "status": "TODO | IN_PROGRESS | DONE",
-  "priority": "BLOCKER | CRITICAL | MAJOR | MINOR",
+  "status": "todo | in_progress | done",
+  "priority": "blocker | critical | major | minor",
   "deadline": "datetime",
   "parent_id": "int | null",
   "project_id": "int"
@@ -128,7 +128,7 @@ POST /tasks
   "project_id": 1,
   "parent_id": null,
   "deadline": "2026-03-20T10:00:00",
-  "priority": "MINOR"
+  "priority": "minor"
 }
 ```
 #### Get Task
@@ -143,8 +143,8 @@ PATCH /tasks/{id}
 {
   "content": "desc",
   "deadline": "2026-03-20T10:00:00",
-  "priority": "MAJOR",
-  "status": "IN_PROGRESS"
+  "priority": "major",
+  "status": "in_progress"
 }
 ```
 #### Delete Task
