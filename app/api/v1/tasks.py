@@ -24,7 +24,7 @@ def get_task(task_id: int, service: task_service_dep):
 
 @router.post('/tasks/', response_model=TaskRead)
 def create_task(task_create_param: TaskCreate, service: task_service_dep):
-    return service.create_task(task_create_param.name)
+    return service.create_task(task_create_param)
 
 @router.put("/tasks/{task_id}", response_model=TaskRead)
 def update_task(task_id: int, name: Annotated[str, Form], service: task_service_dep):

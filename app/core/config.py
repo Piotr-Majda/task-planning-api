@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+from enum import StrEnum
 
 
 load_dotenv()
@@ -19,3 +20,16 @@ class Config(BaseSettings):
 
 
 config = Config()
+
+
+class TaskStatus(StrEnum):
+    TODO = 'todo'
+    IN_PROGRESS = 'in_progress'
+    DONE = 'done'
+
+
+class TaskPriority(StrEnum):
+    BLOCKER = 'blocker'
+    CRITICAL = 'critical'
+    MAJOR = 'major'
+    MINOR = 'minor'

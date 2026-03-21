@@ -1,22 +1,8 @@
 from datetime import datetime
-from enum import StrEnum
 from typing import Annotated, List
 from sqlalchemy import Enum, ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column
-
-
-class TaskStatus(StrEnum):
-    TODO = 'todo'
-    IN_PROGRESS = 'in_progress'
-    DONE = 'done'
-
-
-class TaskPriority(StrEnum):
-    BLOCKER = 'blocker'
-    CRITICAL = 'critical'
-    MAJOR = 'major'
-    MINOR = 'minor'
-
+from app.core.config import TaskPriority, TaskStatus
 
 NameAttr = Annotated[str, mapped_column(String(30), nullable=False)]
 IdAttr = Annotated[int, mapped_column(primary_key=True)]
