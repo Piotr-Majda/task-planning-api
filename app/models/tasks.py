@@ -18,6 +18,15 @@ class TaskCreate(BaseModel):
     parent_id: Optional[int] = None
 
 
+class TaskUpdate(BaseModel):
+    name: Optional[str] = Field(max_length=NAME_MAX_LEN, default=None)
+    content: Optional[str] = Field(max_length=CONTENT_MAX_LEN, default=None)
+    priority: Annotated[Optional[TaskPriority], BeforeValidator(enure_priority_format)] = None
+    deadline: Optional[datetime] = None
+    project_id: Optional[int] = None
+    parent_id: Optional[int] = None
+
+
 class TaskRead(BaseModel):
     id: int
     name: str

@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from app.db.schema import Task, TaskStatus
-from app.models.tasks import TaskCreate
+from app.models.tasks import TaskCreate, TaskUpdate
 
 
 class TaskService:
@@ -14,7 +14,7 @@ class TaskService:
 
     def get_task(self, user_id: int) -> Task | None:
         return self._db.query(Task).filter(Task.id == user_id).first()
-    
+
     def create_task(self, task_create: TaskCreate) -> Task:
         params = task_create.model_dump(exclude_unset=True)
         task = Task(**params, status=TaskStatus.TODO)
@@ -23,11 +23,14 @@ class TaskService:
         self._db.refresh(task)
         return task
     
-    def update_task(self, task_id: int, name: str) -> Task | None:
+    def update_task(self, task_id: int, params: TaskUpdate) -> Task | None:
         task = self.get_task(task_id)
         if not task:
             return
-        task.name = name
+        update_params = params.model_dump(exclude_none=True)
+        for name, value in update_params.items():
+            setattr(task, name, value)
+        
         self._db.commit()
         self._db.refresh(task)
         return task
