@@ -1,9 +1,9 @@
 
 
-from app.exceptions.base_exceptions import BuisnesException
+from app.exceptions.base_exceptions import BusinessException
 
 
-class TaskException(BuisnesException):
+class TaskException(BusinessException):
     pass
 
 

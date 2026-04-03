@@ -28,10 +28,8 @@ class TaskService:
         task = Task(**params, status=TaskStatus.TODO)
         return self._repo.create(task)
     
-    def update_task(self, task_id: int, params: TaskUpdate) -> Task | None:
+    def update_task(self, task_id: int, params: TaskUpdate) -> Task:
         task = self.get_task(task_id)
-        if not task:
-            return
         update_params = params.model_dump(exclude_none=True)
         for name, value in update_params.items():
             setattr(task, name, value)
@@ -39,7 +37,7 @@ class TaskService:
         return self._repo.update(task)
 
     def delete_task(self, task_id: int) -> bool:
-        task = self.get_task(task_id)
+        task = self._repo.get_by_id(task_id)
         if not task:
             return False
         return self._repo.delete(task)
@@ -48,14 +46,32 @@ class TaskService:
     # VALIDATORS
     # ════════════════════════════════════════════════════════════
 
-    def valid_self_parent_assignment(self, parent_id: int , task_id: int):
+    def validate_self_parent_assignment(self, parent_id: int , task_id: int):
+        """
+        Validate that parent id is not same as task id to not introduse confusion
+        
+        Rules:
+        - Task cannot be self assignemt as parent
+        
+        Raises:
+            ParentSelfAssignmentDetected: if parent and task has same id
+        """
         if parent_id == task_id:
             raise ParentSelfAssignmentDetected(
                 parent_id=parent_id, 
                 task_id=task_id
                 )
 
-    def valid_project_consistency(self, parent_project_id: Optional[int], task_project_id: Optional[int]):
+    def validate_project_consistency(self, parent_project_id: Optional[int], task_project_id: Optional[int]):
+        """
+        Validate that parent project id is same as task project id to keep consistency
+        
+        Rules:
+        - Task must have same project id as parent
+        
+        Raises:
+            ProjectMismatch: if parent has different project id then task
+        """
         if not parent_project_id or not task_project_id:
             return
         
@@ -65,16 +81,15 @@ class TaskService:
                 parent_project_id=parent_project_id
                 )
 
-    def valid_no_cycle(self, task_id: int, parent_id: int):
+    def validate_no_cycle(self, task_id: int, parent_id: int):
         """
-        Valid if cycle in inherence is present 
+        Validate that assigning parent_id as parent doesn't create cycle.
         
         Rules:
-        - Task cannot be parent of parent id
+        - Task cannot be ancestor of its own parent
         
-        Behavior:
-        raise cycle detected exception if task is parent of parent
-    
+        Raises:
+            CycleDetected: if cycle would be created
         """
         current = parent_id
 

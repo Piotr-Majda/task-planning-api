@@ -1,9 +1,8 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.exceptions.task_exceptions import TaskException, TaskNotFound
+from app.exceptions.task_exceptions import TaskNotFound
 from app.models.tasks import TaskCreate, TaskRead, TaskUpdate
 from app.repository.task_repository import TaskRepository
 from app.services.task_service import TaskService
@@ -39,7 +38,7 @@ def create_task(params: TaskCreate, service: task_service_dep):
             parent_task = service.get_task(parent_id)
         except TaskNotFound:
             raise HTTPException(status_code=400, detail=f"Reference parent task not found: {parent_id}")
-        service.valid_project_consistency(
+        service.validate_project_consistency(
             parent_project_id=parent_task.project_id, 
             task_project_id=params.project_id
             )
@@ -71,7 +70,7 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     parent_id = params.parent_id
     
     if parent_id:
-        service.valid_self_parent_assignment(
+        service.validate_self_parent_assignment(
             parent_id=parent_id, 
             task_id=task_id
             )
@@ -80,7 +79,7 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
             parent_task = service.get_task(parent_id)
         except TaskNotFound:
             raise HTTPException(status_code=400, detail=f"Reference parent task not found: {parent_id}")
-        service.valid_project_consistency(
+        service.validate_project_consistency(
             parent_project_id=parent_task.project_id, 
             task_project_id=params.project_id
             )
@@ -88,7 +87,7 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
             parent_project_id=parent_task.project_id, 
             task_project_id=params.project_id
             )
-        service.valid_no_cycle(
+        service.validate_no_cycle(
             task_id=task_id, 
             parent_id=parent_id
             )

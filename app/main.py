@@ -7,7 +7,7 @@ from app.core.logging import setup_logging
 from app.db.session import engine
 from app.db.schema import Base
 from app.api.v1.tasks import router as task
-from app.exceptions.base_exceptions import BuisnesException
+from app.exceptions.base_exceptions import BusinessException
 
 
 @asynccontextmanager
@@ -25,10 +25,10 @@ app.include_router(task, prefix="/api/v1")
 def main():
     return {"message": "Welcome to Task Scheduler API. For documentation visit /docs for more information"}
 
-@app.exception_handler(BuisnesException)
+@app.exception_handler(BusinessException)
 async def buisnes_error_handler(
     request: Request, 
-    exc: BuisnesException
+    exc: BusinessException
 ):
     return JSONResponse(
         status_code=400,
