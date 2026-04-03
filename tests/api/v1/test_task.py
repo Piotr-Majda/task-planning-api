@@ -112,7 +112,7 @@ def test_create_children_task_parent_non_exist(client):
     task_second = TASK_SECOND.copy()
     task_second['parent_id'] = '2'
     s_r = client.post("/api/v1/tasks", json=task_second)
-    assert s_r.status_code == 404, s_r.json()
+    assert s_r.status_code == 400, s_r.json()
 
 def test_create_children_task_parent_non_consistent_project_id(client):
     r = client.post("/api/v1/tasks", json=TASK)
@@ -196,12 +196,22 @@ def test_update_task_none_params(client):
     assert r.status_code == 200, r.json()
 
 
-def test_update_task_priority_to_none_is_not_allowed(client):
+def test_update_task_priority_to_none_no_brings_effect(client):
     r = client.post("/api/v1/tasks", json=TASK)
     assert r.status_code == 200, r.json()
     created_task = r.json()
     
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'priority': None})
+    assert r.status_code == 200, r.json()
+    assert r.json()['priority'] == created_task['priority']
+
+
+def test_update_task_priority_to_empty_string_is_not_allowed(client):
+    r = client.post("/api/v1/tasks", json=TASK)
+    assert r.status_code == 200, r.json()
+    created_task = r.json()
+    
+    r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'priority': ""})
     assert r.status_code == 422, r.json()
 
 
@@ -233,7 +243,7 @@ def test_update_task_deadline_invalid_data(client):
     assert r.status_code == 422, r.json()
 
 
-def test_update_task_parent_id_to_self(client):
+def test_update_parent_self_assignment_is_not_allowed(client):
     r = client.post("/api/v1/tasks", json=TASK)
     assert r.status_code == 200, r.json()
     created_task = r.json()
@@ -252,7 +262,7 @@ def test_update_task_parent_id_to_not_existing_task(client):
     created_task = r.json()
 
     s_r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'parent_id': created_task['id'] + 1})
-    assert s_r.status_code == 404, s_r.json()
+    assert s_r.status_code == 400, s_r.json()
 
 
 def test_update_change_parent_to_non_project_id_stay_untouched(client):

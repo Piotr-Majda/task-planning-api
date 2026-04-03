@@ -6,8 +6,10 @@ from app.domain.constants import CONTENT_MAX_LEN, NAME_MAX_LEN
 
 
 def enure_priority_format(priority: str) -> TaskPriority:
+    if priority is None:
+        return None
     if not priority:
-        raise ValueError("Priority is required")
+        raise ValueError("Priority cannot be empty string")
     return TaskPriority(priority.lower())
 
 
