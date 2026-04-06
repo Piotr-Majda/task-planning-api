@@ -24,7 +24,7 @@ def get_tasks(
     page: int = Query(1, ge=1, description="Page number"), 
     limit: int = Query(10, ge=1, le=100, description="Tasks per page")
     ):
-    skip = (page - 1) * 10
+    skip = (page - 1) * limit
     return service.list_task(skip=skip, limit=limit)
 
 @router.get("/tasks/{task_id}", response_model=TaskRead)
