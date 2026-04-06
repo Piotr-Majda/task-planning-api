@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.exceptions.task_exceptions import TaskNotFound
@@ -19,8 +19,13 @@ task_service_dep = Annotated[TaskService, Depends(get_task_service)]
 
 
 @router.get("/tasks/", response_model=List[TaskRead])
-def get_tasks(service:  task_service_dep):
-    return service.list_task()
+def get_tasks(
+    service:  task_service_dep, 
+    page: int = Query(1, ge=1, description="Page number"), 
+    limit: int = Query(10, ge=1, le=100, description="Tasks per page")
+    ):
+    skip = (page - 1) * 10
+    return service.list_task(skip=skip, limit=limit)
 
 @router.get("/tasks/{task_id}", response_model=TaskRead)
 def get_task(task_id: int, service: task_service_dep):

@@ -1,5 +1,5 @@
-
-import json
+from typing import List
+import pytest
 
 
 TASK = {
@@ -351,3 +351,51 @@ def test_update_task_deep_cycle_detected(client):
 
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'parent_id': s_r.json()['id']})
     assert r.status_code == 400, r.json()
+
+
+def test_get_tasks_no_task_present(client):
+    r = client.get("/api/v1/tasks")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 0
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_get_tasks_ten_task_present_ten_return(client, create_task):
+    r = client.get("/api/v1/tasks")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 10
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 11], indirect=True)
+def test_get_tasks_eleven_task_present_ten_return_valid_default_pagination_number(client, create_task):
+    r = client.get("/api/v1/tasks")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 10
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+def test_get_tasks_threeten_task_present_get_10_task_from_page_3(client, create_task):
+    r = client.get("/api/v1/tasks?page=3")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 10
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+def test_get_tasks_threeten_task_present_get_0_task_from_page_4(client, create_task):
+    r = client.get("/api/v1/tasks?page=4")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 0
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+def test_get_tasks_threeten_task_present_get_5_task_from_page_2_with_limit_5(client, create_task):
+    r = client.get("/api/v1/tasks?page=2&limit=5")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 5
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+def test_get_tasks_threeten_task_present_get_8_task_from_page_3_with_limit_11(client, create_task):
+    r = client.get("/api/v1/tasks?page=3&limit=11")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 8

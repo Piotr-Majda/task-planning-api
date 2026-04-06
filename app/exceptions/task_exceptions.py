@@ -13,12 +13,6 @@ class TaskNotFound(TaskException):
             self.message = self.MESSAGE.format(id)
 
 
-class ParentTaskNotFound(TaskException):
-    MESSAGE = "Parent task not found id='{0}'"
-    def __init__(self, id: int) -> None:
-        self.message = self.MESSAGE.format(id)
-
-
 class ParentSelfAssignmentDetected(TaskException):
     MESSAGE = "Parent self assignment detected parent_id='{0}' task_id='{1}'"
     def __init__(self, parent_id: int, task_id: int) -> None:

@@ -11,9 +11,9 @@ class TaskRepository:
         """Get task by ID from DB"""
         return self._db.query(Task).filter(Task.id == task_id).first()
     
-    def get_all(self) -> List[Task]:
+    def get_all(self, skip: int, limit: int) -> List[Task]:
         """Get all tasks from DB"""
-        return self._db.query(Task).all()
+        return self._db.query(Task).offset(skip).limit(limit).all()
     
     def create(self, task: Task) -> Task:
         """Create new task in DB"""
