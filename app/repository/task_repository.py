@@ -13,7 +13,7 @@ class TaskRepository:
     
     def get_all(self, skip: int, limit: int) -> List[Task]:
         """Get all tasks from DB"""
-        return self._db.query(Task).offset(skip).limit(limit).all()
+        return self._db.query(Task).order_by(Task.id).offset(skip).limit(limit).all()
     
     def create(self, task: Task) -> Task:
         """Create new task in DB"""

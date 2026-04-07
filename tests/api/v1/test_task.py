@@ -371,9 +371,22 @@ def test_get_tasks_eleven_task_present_ten_return_valid_default_pagination_numbe
     r = client.get("/api/v1/tasks")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 10
-    excepted_ids = create_task[:10]
+    expected_ids = create_task[:10]
     present_ids = [task['id'] for task in r.json()]
-    assert present_ids == excepted_ids
+    assert present_ids == sorted(expected_ids)
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_get_tasks_ten_task_present_try_get_from_page_0_validate_is_not_allowed(client, create_task):
+    r = client.get("/api/v1/tasks?page=0")
+    assert r.status_code == 422, r.json()
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_get_tasks_ten_task_present_get_zero_tasks_from_page_2(client, create_task):
+    r = client.get("/api/v1/tasks?page=2")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 0
 
 
 @pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
@@ -381,9 +394,9 @@ def test_get_tasks_threeten_task_present_get_10_task_from_page_3(client, create_
     r = client.get("/api/v1/tasks?page=3")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 10
-    excepted_ids = create_task[20:30]
+    expected_ids = create_task[20:30]
     present_ids = [task['id'] for task in r.json()]
-    assert present_ids == excepted_ids
+    assert present_ids == sorted(expected_ids)
 
 
 @pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
@@ -393,14 +406,35 @@ def test_get_tasks_threeten_task_present_get_0_task_from_page_4(client, create_t
     assert len(r.json()) == 0
 
 
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_get_tasks_ten_task_try_get_with_limit_zero_validate_is_not_allowed(client, create_task):
+    r = client.get("/api/v1/tasks?limit=0")
+    assert r.status_code == 422, r.json()
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_get_tasks_ten_task_ge_ten_tasks_with_limit_100(client, create_task):
+    r = client.get("/api/v1/tasks?limit=100")
+    assert r.status_code == 200, r.json()
+    assert len(r.json()) == 10
+    expected_ids = create_task[0:10]
+    present_ids = [task['id'] for task in r.json()]
+    assert present_ids == sorted(expected_ids)
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_get_tasks_ten_task_try_get_task_with_limit_101_validate_is_not_allowed(client, create_task):
+    r = client.get("/api/v1/tasks?limit=101")
+    assert r.status_code == 422, r.json()
+
+
 @pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
 def test_get_tasks_threeten_task_present_get_5_task_from_page_2_with_limit_5(client, create_task):
     r = client.get("/api/v1/tasks?page=2&limit=5")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 5
-    excepted_ids = create_task[5:10]
+    expected_ids = create_task[5:10]
     present_ids = [task['id'] for task in r.json()]
-    assert present_ids == excepted_ids
+    assert present_ids == sorted(expected_ids)
 
 
 @pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
@@ -408,6 +442,6 @@ def test_get_tasks_threeten_task_present_get_8_task_from_page_3_with_limit_11(cl
     r = client.get("/api/v1/tasks?page=3&limit=11")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 8
-    excepted_ids = create_task[22:30]
+    expected_ids = create_task[22:30]
     present_ids = [task['id'] for task in r.json()]
-    assert present_ids == excepted_ids
+    assert present_ids == sorted(expected_ids)
