@@ -12,3 +12,14 @@ class TaskPriority(StrEnum):
     CRITICAL = 'critical'
     MAJOR = 'major'
     MINOR = 'minor'
+
+
+class SortBy(StrEnum):
+    DEADLINE = 'deadline'
+    NAME = 'name'
+    CREATED_AT = 'created_at'
+
+
+class OrderBy(StrEnum):
+    ASC = 'asc'
+    DESC = 'desc'

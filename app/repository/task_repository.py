@@ -1,6 +1,8 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, query
+from sqlalchemy import desc
 from app.db.schema import Task
+from app.domain.enums import OrderBy, SortBy
 
 
 class TaskRepository:
@@ -11,9 +13,15 @@ class TaskRepository:
         """Get task by ID from DB"""
         return self._db.query(Task).filter(Task.id == task_id).first()
     
-    def get_all(self, skip: int, limit: int) -> List[Task]:
+    def get_all(self, skip: int, limit: int, sort: SortBy, order: OrderBy, search: Optional[str]) -> List[Task]:
         """Get all tasks from DB"""
-        return self._db.query(Task).order_by(Task.id).offset(skip).limit(limit).all()
+        query = self._db.query(Task)
+        if search:
+            query = query.filter(Task.name.ilike(f"%{search}%"))
+        
+        order_by = desc(sort) if order == OrderBy.DESC else sort
+
+        return query.order_by(order_by).offset(skip).limit(limit).all()
     
     def create(self, task: Task) -> Task:
         """Create new task in DB"""

@@ -3,7 +3,7 @@ import pytest
 
 
 @pytest.fixture(scope='function')
-def create_task(client, request) -> List[int]:
+def create_task(client, request) -> List[dict]:
     tasks = request.param
     if not isinstance(tasks, list):
         raise ValueError("Given value has incorrect format for creating task")
@@ -11,5 +11,5 @@ def create_task(client, request) -> List[int]:
     for task in tasks:
         r = client.post("/api/v1/tasks", json=task)
         assert r.status_code == 200
-        created_ids.append(r.json()['id'])
+        created_ids.append(r.json())
     return created_ids

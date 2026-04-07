@@ -1,4 +1,5 @@
 
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -10,9 +11,11 @@ from app.api.v1.tasks import router as task
 from app.exceptions.base_exceptions import BusinessException
 
 
+logger = setup_logging(config.app_name)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    setup_logging()
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
@@ -36,3 +39,18 @@ async def buisnes_error_handler(
             'detail': exc.message
         }
     )
+
+@app.middleware('http')
+async def handle_logging(request: Request, call_next):
+    client_ip = request.client.host if request.client else 'unknow'
+    method = request.method
+    url = request.url.path
+
+    logger.info(f"Request: {method} {url} from {client_ip}")
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    status_code = response.status_code
+    logger.info(f"Response: {method} {url} returned {status_code} to {client_ip}")
+    return response

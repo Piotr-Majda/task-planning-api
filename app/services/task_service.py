@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from app.db.schema import Task, TaskStatus
+from app.domain.enums import OrderBy, SortBy
 from app.exceptions.task_exceptions import CycleDetected, ParentSelfAssignmentDetected, ProjectMismatch, TaskNotFound
 from app.models.tasks import TaskCreate, TaskUpdate
 from app.repository.task_repository import TaskRepository
@@ -14,8 +15,8 @@ class TaskService:
     # CRUD
     # ════════════════════════════════════════════════════════════
 
-    def list_task(self, skip: int, limit: int)-> List[Task]:
-        return self._repo.get_all(skip, limit)
+    def list_task(self, skip: int, limit: int, sort: SortBy, order:OrderBy, search: Optional[str])-> List[Task]:
+        return self._repo.get_all(skip, limit, sort, order, search)
 
     def get_task(self, task_id: int) -> Task:
         task = self._repo.get_by_id(task_id)

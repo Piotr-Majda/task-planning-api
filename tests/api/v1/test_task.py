@@ -1,11 +1,15 @@
-from typing import List
+from collections import Counter
+import datetime
 import pytest
+import random
+
+from sqlalchemy import exc
 
 
 TASK = {
         "name": "Test Task", 
         "content": "description", 
-        "deadline": "2026-03-20T10:00:00",
+        "deadline": "2026-03-20T00:00:00",
         "priority": "MAJOR",
         'project_id': 1
 }
@@ -13,7 +17,7 @@ TASK = {
 TASK_SECOND = {
         "name": "Test Task 2", 
         "content": "description", 
-        "deadline": "2026-03-20T10:00:00",
+        "deadline": "2026-03-20T00:00:00",
         "priority": "MINOR"
 }
 
@@ -21,8 +25,18 @@ TASK_SECOND = {
 TASK_THIRD = {
         "name": "Test Task 2", 
         "content": "description", 
-        "deadline": "2026-03-20T10:00:00",
+        "deadline": "2026-03-20T00:00:00",
         "priority": "MINOR"
+}
+
+
+def generate_task_data() -> dict:
+    dt = datetime.datetime(2026, 5, 1) + random.random() * datetime.timedelta(days=30)
+    return {
+        "name": " ".join([random.choice(['Add', 'Refactor', 'Test']), random.choice(['Feature', 'Docs']), str(random.randint(1, 100))]),
+        "content": "description", 
+        "deadline": str(dt),
+        "priority": random.choice(['MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER'])
 }
 
 
@@ -39,7 +53,7 @@ def test_create_and_get_task(client):
     assert fetched_task['id'] == created_task['id']
     assert fetched_task['name'] == TASK['name']
     assert fetched_task['content'] == TASK['content']
-    assert fetched_task['deadline'] == TASK["deadline"]
+    assert fetched_task['deadline'] == TASK['deadline']
     assert fetched_task['project_id'] == TASK["project_id"]
     assert fetched_task['priority'].upper() == TASK["priority"]
     assert fetched_task['project_id'] == TASK['project_id']
@@ -80,9 +94,21 @@ def test_create_invalid_priority(client):
     assert r.status_code == 422, r.json()
 
 
-def test_create_invalid_deadline_format(client):
+def test_create_deadline_without_minutes_and_seconds(client):
     task = TASK.copy()
     task['deadline'] = '2026-03-20T10'
+
+    r = client.post("/api/v1/tasks", json=task)
+    assert r.status_code == 200, r.json()
+
+    created_task = r.json()
+    assert created_task['deadline'].startswith("2026-03-20T10:00:00")
+
+
+def test_create_deadline_invalid_format(client):
+    task = TASK.copy()
+    task['deadline'] = '2026/03/20'
+
     r = client.post("/api/v1/tasks", json=task)
     assert r.status_code == 422, r.json()
 
@@ -371,7 +397,7 @@ def test_get_tasks_eleven_task_present_ten_return_valid_default_pagination_numbe
     r = client.get("/api/v1/tasks")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 10
-    expected_ids = create_task[:10]
+    expected_ids = [task['id'] for task in create_task[:10]]
     present_ids = [task['id'] for task in r.json()]
     assert present_ids == sorted(expected_ids)
 
@@ -394,7 +420,7 @@ def test_get_tasks_threeten_task_present_get_10_task_from_page_3(client, create_
     r = client.get("/api/v1/tasks?page=3")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 10
-    expected_ids = create_task[20:30]
+    expected_ids = [task['id'] for task in create_task[20:30]]
     present_ids = [task['id'] for task in r.json()]
     assert present_ids == sorted(expected_ids)
 
@@ -417,7 +443,7 @@ def test_get_tasks_ten_task_ge_ten_tasks_with_limit_100(client, create_task):
     r = client.get("/api/v1/tasks?limit=100")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 10
-    expected_ids = create_task[0:10]
+    expected_ids = [task['id'] for task in create_task[0:10]]
     present_ids = [task['id'] for task in r.json()]
     assert present_ids == sorted(expected_ids)
 
@@ -432,7 +458,7 @@ def test_get_tasks_threeten_task_present_get_5_task_from_page_2_with_limit_5(cli
     r = client.get("/api/v1/tasks?page=2&limit=5")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 5
-    expected_ids = create_task[5:10]
+    expected_ids = [task['id'] for task in create_task[5:10]]
     present_ids = [task['id'] for task in r.json()]
     assert present_ids == sorted(expected_ids)
 
@@ -442,6 +468,104 @@ def test_get_tasks_threeten_task_present_get_8_task_from_page_3_with_limit_11(cl
     r = client.get("/api/v1/tasks?page=3&limit=11")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 8
-    expected_ids = create_task[22:30]
+    expected_ids = [task['id'] for task in create_task[22:30]]
     present_ids = [task['id'] for task in r.json()]
     assert present_ids == sorted(expected_ids)
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_sort_by_name_by_default(client, create_task):
+    r = client.get("/api/v1/tasks")
+    assert r.status_code == 200, r.json()
+    excepted_names = [task['name'] for task in create_task]
+    present_names = [task['name'] for task in r.json()]
+    assert present_names == sorted(excepted_names)[:10]
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_sort_by_deadline(client, create_task):
+    r = client.get("/api/v1/tasks?sort=deadline")
+    assert r.status_code == 200, r.json()
+    excepted = [task['deadline'] for task in create_task]
+    present = [task['deadline'] for task in r.json()]
+    assert present == sorted(excepted)[:10]
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_sort_by_created_at(client, create_task):
+    r = client.get("/api/v1/tasks?sort=created_at")
+    assert r.status_code == 200, r.json()
+    excepted = [task['created_at'] for task in create_task]
+    present = [task['created_at'] for task in r.json()]
+    assert present == sorted(excepted)[:10]
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_invalid_sort_value(client, create_task):
+    r = client.get("/api/v1/tasks?sort=deedline")
+    assert r.status_code == 422, r.json()
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_not_allowed_empty_sort_value(client, create_task):
+    r = client.get("/api/v1/tasks?sort=")
+    assert r.status_code == 422, r.json()
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_sort_descendense(client, create_task):
+    r = client.get("/api/v1/tasks?sort=deadline&order=desc")
+    assert r.status_code == 200, r.json()
+    excepted = [task['deadline'] for task in create_task]
+    present = [task['deadline'] for task in r.json()]
+    assert present == sorted(excepted, reverse=True)[:10]
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_sort_asc(client, create_task):
+    r = client.get("/api/v1/tasks?sort=deadline&order=asc")
+    assert r.status_code == 200, r.json()
+    excepted = [task['deadline'] for task in create_task]
+    present = [task['deadline'] for task in r.json()]
+    assert present == sorted(excepted)[:10]
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_with_validate_sort_invalid_value(client, create_task):
+    r = client.get("/api/v1/tasks?sort=deadline&order=invalid")
+    assert r.status_code == 422, r.json()
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_search_by_most_common_word(client, create_task):
+    excepted_names = [task['name'] for task in create_task]
+
+    words = [word for name in excepted_names for word in name.split()]
+    
+    word = Counter(words).most_common(1)[0][0]
+    excepted_names = [name for name in excepted_names if word in name]
+
+    r = client.get(f"/api/v1/tasks?search={word}")
+    assert r.status_code == 200, r.json()
+
+    present_names = [task['name'] for task in r.json()]
+    assert present_names == sorted(excepted_names)[:10]
+
+
+@pytest.mark.parametrize('create_task', [[generate_task_data() for t in range(30)]], indirect=True)
+def test_get_tasks_threeten_task_search_by_most_common_word_and_sort_by_deadline_order_desc(client, create_task):
+    excepted_names = [task['name'] for task in create_task]
+
+    words = [word for name in excepted_names for word in name.split()]
+    
+    word = Counter(words).most_common(1)[0][0]
+    excepted_tasks = [task for task in create_task if word in task['name']]
+    excepted_tasks.sort(key=lambda t: t['deadline'], reverse=True)
+    excepted_names = [task['name'] for task in excepted_tasks]
+
+
+    r = client.get(f"/api/v1/tasks?search={word}&sort=deadline&order=desc")
+    assert r.status_code == 200, r.json()
+
+    present_names = [task['name'] for task in r.json()]
+    assert present_names == sorted(excepted_names)[:10]
