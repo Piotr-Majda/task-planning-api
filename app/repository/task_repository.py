@@ -19,7 +19,6 @@ class TaskRepository:
         if search:
             query = query.filter(Task.name.ilike(f"%{search}%"))
 
-         # Dynamic column getter — safe!
         try:
             sort_column = getattr(Task, sort.value)
         except AttributeError:

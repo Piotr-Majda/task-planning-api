@@ -569,3 +569,51 @@ def test_get_tasks_threeten_task_search_by_most_common_word_and_sort_by_deadline
     present_names = [task['name'] for task in r.json()]
 
     assert present_names == excepted_names[:10]
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_delete_task_(client, create_task):
+    task = create_task[0]
+    r = client.delete(f'/api/v1/tasks/{task['id']}')
+    assert r.status_code == 204, r.json()
+
+    r = client.delete(f'/api/v1/tasks/{task['id']}')
+    assert r.status_code == 404, r.json()
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_delete_task_patch_task_as_parent_delete_validate_if_patched_task_has_none_parent(client, create_task):
+    task, task_second = create_task[0:2]
+    r= client.patch(f'/api/v1/tasks/{task_second['id']}', json={'parent_id': task['id']})
+    assert r.status_code == 200, r.json()
+    assert r.json()['parent_id'] == task['id']
+
+    r = client.delete(f'/api/v1/tasks/{task['id']}')
+    assert r.status_code == 204, r.json()
+
+    r = client.get(f"/api/v1/tasks/{task_second['id']}")
+    assert r.status_code == 200, r.json()
+    assert r.json()['parent_id'] == None
+
+
+@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+def test_delete_task_patch_task_as_parent_delete_validate_if_patched_tasks_has_none_parent(client, create_task):
+    task, task_second, task_third = create_task[0:3]
+    r= client.patch(f'/api/v1/tasks/{task_second['id']}', json={'parent_id': task['id']})
+    assert r.status_code == 200, r.json()
+    assert r.json()['parent_id'] == task['id']
+
+    r= client.patch(f'/api/v1/tasks/{task_third['id']}', json={'parent_id': task['id']})
+    assert r.status_code == 200, r.json()
+    assert r.json()['parent_id'] == task['id']
+
+    r = client.delete(f'/api/v1/tasks/{task['id']}')
+    assert r.status_code == 204, r.json()
+
+    r = client.get(f"/api/v1/tasks/{task_second['id']}")
+    assert r.status_code == 200, r.json()
+    assert r.json()['parent_id'] == None
+
+    r = client.get(f"/api/v1/tasks/{task_third['id']}")
+    assert r.status_code == 200, r.json()
+    assert r.json()['parent_id'] == None

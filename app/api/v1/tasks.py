@@ -113,6 +113,18 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
 
 @router.delete('/tasks/{task_id}', status_code=204)
 def delete_task(task_id: int, service: task_service_dep):
+    """
+    Delete task by ID.
+    
+    Behavior:
+    - Hard delete (remove from DB)
+    - If task has children: orphan them (parent_id = NULL)
+    - No cascade delete
+    
+    Status codes:
+    - 204: Task deleted
+    - 404: Task not found
+    """
     if service.delete_task(task_id=task_id):
         return {"detail": "Task deleted"}
     raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
