@@ -1,5 +1,5 @@
 from typing import Optional, Annotated
-from pydantic import BaseModel, BeforeValidator, Field, StringConstraints
+from pydantic import BaseModel, BeforeValidator, Field
 from datetime import datetime
 from app.domain.enums import TaskPriority, TaskStatus
 from app.domain.constants import CONTENT_MAX_LEN, NAME_MAX_LEN
@@ -57,12 +57,3 @@ class TaskRead(BaseModel):
     parent_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
-
-
-class SearchQuery(BaseModel):
-    search: Annotated[Optional[str], StringConstraints(
-        min_length=1, 
-        max_length=100, 
-        strip_whitespace=True, 
-        pattern=r'^[^<>\"\\]*$'
-        )] = None

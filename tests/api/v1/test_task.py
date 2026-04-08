@@ -3,8 +3,6 @@ import datetime
 import pytest
 import random
 
-from sqlalchemy import exc
-
 
 TASK = {
         "name": "Test Task", 

@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.domain.enums import OrderBy, SortBy
 from app.exceptions.task_exceptions import TaskNotFound
-from app.models.tasks import SearchQuery, TaskCreate, TaskRead, TaskUpdate
+from app.models.tasks import TaskCreate, TaskRead, TaskUpdate
+from app.models.common import SearchQuery
 from app.repository.task_repository import TaskRepository
 from app.services.task_service import TaskService
 
-router = APIRouter()
+router = APIRouter(prefix="/tasks")
 
 def get_task_repo(db: Session = Depends(get_db))-> TaskRepository:
     return TaskRepository(db)
@@ -19,7 +20,7 @@ def get_task_service(task_repo: TaskRepository = Depends(get_task_repo)):
 task_service_dep = Annotated[TaskService, Depends(get_task_service)]
 
 
-@router.get("/tasks/", response_model=List[TaskRead])
+@router.get("/", response_model=List[TaskRead])
 def get_tasks(
     service: task_service_dep,
     search: Optional[str] = Query(None, description="String that contains in task name"),
@@ -36,14 +37,14 @@ def get_tasks(
 
     return service.list_task(skip=skip, limit=limit, sort=sort, order=order, search=search)
 
-@router.get("/tasks/{task_id}", response_model=TaskRead)
+@router.get("/{task_id}", response_model=TaskRead)
 def get_task(task_id: int, service: task_service_dep):
     try:
         return service.get_task(task_id)
     except TaskNotFound:
         raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
 
-@router.post('/tasks/', response_model=TaskRead)
+@router.post('/', response_model=TaskRead)
 def create_task(params: TaskCreate, service: task_service_dep):
     parent_id = params.parent_id
     
@@ -63,7 +64,7 @@ def create_task(params: TaskCreate, service: task_service_dep):
     
     return service.create_task(params)
 
-@router.patch("/tasks/{task_id}", response_model=TaskRead)
+@router.patch("/{task_id}", response_model=TaskRead)
 def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     """
     Update task.
@@ -74,6 +75,7 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     - 400: self-parent assignment
     - 400: cycle detected
     - 400: project mismatch
+    - 200: task updated succesful
     """
     # Valid task exist
     try:
@@ -111,7 +113,7 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
         params=params
         )
 
-@router.delete('/tasks/{task_id}', status_code=204)
+@router.delete('/{task_id}', status_code=204)
 def delete_task(task_id: int, service: task_service_dep):
     """
     Delete task by ID.
