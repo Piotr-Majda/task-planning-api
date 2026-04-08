@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session, query
+from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from app.db.schema import Task
 from app.domain.enums import OrderBy, SortBy
@@ -18,8 +18,14 @@ class TaskRepository:
         query = self._db.query(Task)
         if search:
             query = query.filter(Task.name.ilike(f"%{search}%"))
-        
-        order_by = desc(sort) if order == OrderBy.DESC else sort
+
+         # Dynamic column getter — safe!
+        try:
+            sort_column = getattr(Task, sort.value)
+        except AttributeError:
+            raise ValueError(f"Invalid sort field: {sort.value}")
+
+        order_by = desc(sort_column) if order == OrderBy.DESC else sort_column
 
         return query.order_by(order_by).offset(skip).limit(limit).all()
     

@@ -42,7 +42,7 @@ async def buisnes_error_handler(
 
 @app.middleware('http')
 async def handle_logging(request: Request, call_next):
-    client_ip = request.client.host if request.client else 'unknow'
+    client_ip = request.client.host if request.client else 'unknown'
     method = request.method
     url = request.url.path
 

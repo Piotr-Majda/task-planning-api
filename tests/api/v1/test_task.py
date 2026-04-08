@@ -563,9 +563,9 @@ def test_get_tasks_threeten_task_search_by_most_common_word_and_sort_by_deadline
     excepted_tasks.sort(key=lambda t: t['deadline'], reverse=True)
     excepted_names = [task['name'] for task in excepted_tasks]
 
-
     r = client.get(f"/api/v1/tasks?search={word}&sort=deadline&order=desc")
     assert r.status_code == 200, r.json()
 
     present_names = [task['name'] for task in r.json()]
-    assert present_names == sorted(excepted_names)[:10]
+
+    assert present_names == excepted_names[:10]

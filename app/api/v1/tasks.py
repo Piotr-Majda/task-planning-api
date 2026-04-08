@@ -24,7 +24,7 @@ def get_tasks(
     service: task_service_dep,
     search: Optional[str] = Query(None, description="String that contains in task name"),
     sort: SortBy = Query(SortBy.NAME, description="Attr on which you want to sort by"),
-    order: OrderBy = Query(OrderBy.ASC, description="Sort by this order ascendensce or descendens"),
+    order: OrderBy = Query(OrderBy.ASC, description="Sort by this order ascending or descending"),
     page: int = Query(1, ge=1, description="Page number"), 
     limit: int = Query(10, ge=1, le=100, description="Tasks per page"),
 ):
