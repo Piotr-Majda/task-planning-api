@@ -81,10 +81,10 @@ def test_update_project_not_exist(client):
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
 def test_update_project_none_params(client, create_project):
-    r = client.patch(f"/api/v1/projects/{create_project['id']}", json={})
+    r = client.patch(f"/api/v1/projects/{create_project[0]['id']}", json={})
     assert r.status_code == 200, r.json()
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
 def test_update_project_add_member(client, create_project):
-    r = client.patch(f"/api/v1/projects/{create_project['id']}", json={})
+    r = client.patch(f"/api/v1/projects/{create_project[0]['id']}", json={})
     assert r.status_code == 200, r.json()

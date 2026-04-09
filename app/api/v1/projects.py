@@ -67,9 +67,11 @@ def delete_project(project_id: int, service: project_service_dep):
     - 204: Task deleted
     - 404: Task not found
     """
-    if service.delete(project_id):
+    try:
+        service.delete(project_id)
         return {"detail": "Project deleted"}
-    raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found")
+    except ProjectNotFound:
+        raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found")
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)

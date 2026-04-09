@@ -1,21 +1,22 @@
 from typing import List, Optional
 
-from app.db.schema import Project
+from app.db.schema import Project, User
 from app.domain.enums import OrderBy, SortBy
 from app.exceptions.project_exceptions import ProjectNotFound
+from app.exceptions.user_exceptions import UserNotFound
 from app.models.projects import ProjectCreate, ProjectUpdate
-from app.repository.project_repository import ProjectRepository
+from app.repository.user_repository import UserRepository
 
 
-class ProjectService:
-    def __init__(self, repo: ProjectRepository) -> None:
+class UserService:
+    def __init__(self, repo: UserRepository) -> None:
         self._repo = repo
 
     # ════════════════════════════════════════════════════════════
     # CRUD
     # ════════════════════════════════════════════════════════════
 
-    def list(self, skip: int, limit: int, sort: SortBy, order: OrderBy, search: Optional[str])-> List[Project]:
+    def list(self, skip: int, limit: int, sort: SortBy, order: OrderBy, search: Optional[str])-> List[User]:
         filters = self._repo.build_filters(search)
         return self._repo.get_all(
             skip=skip, 
@@ -25,27 +26,27 @@ class ProjectService:
             filters=filters
         )
 
-    def get(self, id: int) -> Project:
-        project = self._repo.get_by_id(id)
-        if not project:
-            raise ProjectNotFound(id=id)
-        return project
+    def get(self, id: int) -> User:
+        user = self._repo.get_by_id(id)
+        if not user:
+            raise UserNotFound(id=id)
+        return user
 
-    def create(self, project_create: ProjectCreate) -> Project:
+    def create(self, project_create: ProjectCreate) -> User:
         params = project_create.model_dump(exclude_unset=True)
-        project = Project(**params)
-        return self._repo.create(project)
+        user = User(**params)
+        return self._repo.create(user)
     
-    def update(self, id: int, params: ProjectUpdate) -> Project:
-        project = self.get(id)
+    def update(self, id: int, params: ProjectUpdate) -> User:
+        user = self.get(id)
         update_params = params.model_dump(exclude_none=True)
         for name, value in update_params.items():
-            setattr(project, name, value)
+            setattr(user, name, value)
         
-        return self._repo.update(project)
+        return self._repo.update(user)
 
     def delete(self, id: int) -> None:
         project = self._repo.get_by_id(id)
         if not project:
-            raise ProjectNotFound(id=id)
+            raise UserNotFound(id=id)
         self._repo.delete(project)

@@ -36,7 +36,7 @@ def get_tasks(
     if search is not None:
         search = SearchQuery(search=search).search
 
-    return service.list_task(skip=skip, limit=limit, sort=sort, order=order, search=search)
+    return service.list(skip=skip, limit=limit, sort=sort, order=order, search=search)
 
 @router.get("/{task_id}", response_model=TaskRead)
 def get_task(task_id: int, service: task_service_dep):
@@ -128,6 +128,8 @@ def delete_task(task_id: int, service: task_service_dep):
     - 204: Task deleted
     - 404: Task not found
     """
-    if service.delete_task(task_id=task_id):
+    try:
+        service.delete_task(task_id=task_id)
         return {"detail": "Task deleted"}
-    raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
+    except TaskNotFound:
+        raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")

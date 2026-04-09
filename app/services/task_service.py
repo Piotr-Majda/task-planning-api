@@ -15,8 +15,15 @@ class TaskService:
     # CRUD
     # ════════════════════════════════════════════════════════════
 
-    def list_task(self, skip: int, limit: int, sort: SortBy, order:OrderBy, search: Optional[str])-> List[Task]:
-        return self._repo.get_all(skip, limit, sort, order, search)
+    def list(self, skip: int, limit: int, sort: SortBy, order: OrderBy, search: Optional[str])-> List[Task]:
+        filters = self._repo.build_filters(search)
+        return self._repo.get_all(
+            skip=skip, 
+            limit=limit, 
+            sort_by=sort, 
+            order=order, 
+            filters=filters
+        )
 
     def get_task(self, task_id: int) -> Task:
         task = self._repo.get_by_id(task_id)
@@ -37,11 +44,11 @@ class TaskService:
         
         return self._repo.update(task)
 
-    def delete_task(self, task_id: int) -> bool:
+    def delete_task(self, task_id: int) -> None:
         task = self._repo.get_by_id(task_id)
         if not task:
-            return False
-        return self._repo.delete(task)
+            raise TaskNotFound(id=task_id)
+        self._repo.delete(task)
 
     # ════════════════════════════════════════════════════════════
     # VALIDATORS
