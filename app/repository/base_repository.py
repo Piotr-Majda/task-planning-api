@@ -33,7 +33,7 @@ class BaseRepository(Generic[T]):
             query = query.filter(*filters)
 
         if sort_by:
-            column = getattr(self._model, sort_by, None)
+            column = getattr(self._model, sort_by.value, None)
             if column is None:
                 raise ValueError(f"Model {self._model} not has sort field: {sort_by}")
             query = query.order_by(desc(column) if order == OrderBy.DESC else column)

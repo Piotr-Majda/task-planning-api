@@ -1,10 +1,9 @@
 from typing import List, Optional
 
-from app.db.schema import Project, User
+from app.db.schema import User
 from app.domain.enums import OrderBy, SortBy
-from app.exceptions.project_exceptions import ProjectNotFound
 from app.exceptions.user_exceptions import UserNotFound
-from app.models.projects import ProjectCreate, ProjectUpdate
+from app.models.users import UserCreate, UserUpdate
 from app.repository.user_repository import UserRepository
 
 
@@ -32,12 +31,12 @@ class UserService:
             raise UserNotFound(id=id)
         return user
 
-    def create(self, project_create: ProjectCreate) -> User:
+    def create(self, project_create: UserCreate) -> User:
         params = project_create.model_dump(exclude_unset=True)
         user = User(**params)
         return self._repo.create(user)
     
-    def update(self, id: int, params: ProjectUpdate) -> User:
+    def update(self, id: int, params: UserUpdate) -> User:
         user = self.get(id)
         update_params = params.model_dump(exclude_none=True)
         for name, value in update_params.items():

@@ -77,8 +77,6 @@ def delete_project(project_id: int, service: project_service_dep):
 @router.patch("/{project_id}", response_model=ProjectRead)
 def update_project(project_id: int, params: ProjectUpdate, service: project_service_dep):
     """
-    Update task.
-    
     Status codes:
     - 404: project_id resource not found
     - 200: project updated succesful

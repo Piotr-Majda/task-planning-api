@@ -1,23 +1,20 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel, Field
 
 from app.domain.constants import NAME_MAX_LEN
 
 
-class ProjectCreate(BaseModel):
+class UserCreate(BaseModel):
     name: str = Field(max_length=NAME_MAX_LEN)
-    owner_id: Optional[int] = None
 
 
-class ProjectRead(BaseModel):
+class UserRead(BaseModel):
     id: int
     name: str
-    owner_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
 
-class ProjectUpdate(BaseModel):
+class UserUpdate(BaseModel):
     name: Optional[str] = Field(max_length=NAME_MAX_LEN, default=None)
-    owner_id: Optional[int] = None

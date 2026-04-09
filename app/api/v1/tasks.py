@@ -1,4 +1,4 @@
-from typing import Annotated, List, Literal, Optional
+from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -68,8 +68,6 @@ def create_task(params: TaskCreate, service: task_service_dep):
 @router.patch("/{task_id}", response_model=TaskRead)
 def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     """
-    Update task.
-    
     Status codes:
     - 404: task_id resource not found
     - 400: parent_id reference not found (bad body)
