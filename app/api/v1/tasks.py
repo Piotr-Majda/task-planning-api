@@ -24,6 +24,7 @@ task_service_dep = Annotated[TaskService, Depends(get_task_service)]
 def get_tasks(
     service: task_service_dep,
     search: Optional[str] = Query(None, description="String that contains in task name"),
+    # filter: FilterBy = Query(description="Attr on which you want to filter by"), TODO this or other implementation idea get task with concrete project
     sort: SortBy = Query(SortBy.NAME, description="Attr on which you want to sort by"),
     order: OrderBy = Query(OrderBy.ASC, description="Sort by this order ascending or descending"),
     page: int = Query(1, ge=1, description="Page number"), 

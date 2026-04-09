@@ -1,5 +1,3 @@
-
-
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
@@ -17,7 +15,6 @@ class ProjectRead(BaseModel):
     id: int
     name: str
     owner_id: Optional[int] = None
-    task_ids: List[int] = []
     created_at: datetime
     updated_at: datetime
 
@@ -25,4 +22,3 @@ class ProjectRead(BaseModel):
 class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(max_length=NAME_MAX_LEN, default=None)
     owner_id: Optional[int] = None
-    task_ids: List[int] = []
