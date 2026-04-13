@@ -196,6 +196,6 @@ POST /users
 #### Get User
 GET /users/{id}
 #### List Users
-GET /users/{id}
+GET /users
 #### Delete User
 DELETE /users/{id}

@@ -13,12 +13,18 @@ TASK = {
         'project_id': 1
 }
 
-def test_create_and_get_project(client):
+def test_projects_create__valid_payload__returns_created_project(client):
     r = client.post("/api/v1/projects", json=PROJECT)
     assert r.status_code == 200, r.json()
     created_project = r.json()
     assert created_project['name'] == PROJECT['name']
     assert "id" in created_project
+
+
+def test_projects_get__existing_project__returns_project(client):
+    create_r = client.post("/api/v1/projects", json=PROJECT)
+    assert create_r.status_code == 200, create_r.json()
+    created_project = create_r.json()
 
     get_r = client.get(f"/api/v1/projects/{created_project['id']}")
     assert get_r.status_code == 200, get_r.json()
@@ -29,10 +35,17 @@ def test_create_and_get_project(client):
 
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
-def test_delete_task(client, create_project):
+def test_projects_delete__existing_project__returns_204(client, create_project):
     project = create_project[0]
     r = client.delete(f'/api/v1/projects/{project['id']}')
     assert r.status_code == 204, r.json()
+
+
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+def test_projects_delete__already_deleted_project__returns_404(client, create_project):
+    project = create_project[0]
+    delete_r = client.delete(f'/api/v1/projects/{project['id']}')
+    assert delete_r.status_code == 204, delete_r.json()
 
     r = client.delete(f'/api/v1/projects/{project['id']}')
     assert r.status_code == 404, r.json()
@@ -40,7 +53,7 @@ def test_delete_task(client, create_project):
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
 @pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
-def test_delete_task_valid_task_with_this_project_has_updated_project_id(client, create_project, create_task):
+def test_projects_delete__tasks_assigned_to_project__orphans_task_project_id(client, create_project, create_task):
     project = create_project[0]
 
     r = client.delete(f'/api/v1/projects/{project['id']}')
@@ -52,7 +65,7 @@ def test_delete_task_valid_task_with_this_project_has_updated_project_id(client,
     assert all(task['project_id'] == None for task in tasks), tasks
 
 
-def test_update_name_project(client):
+def test_projects_update__name_change__returns_updated_project(client):
     r = client.post("/api/v1/projects", json=PROJECT)
     assert r.status_code == 200, r.json()
     created_project = r.json()
@@ -66,7 +79,7 @@ def test_update_name_project(client):
 
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
-def test_update_change_owner(client, create_project):
+def test_projects_update__owner_change__returns_updated_owner(client, create_project):
     project = create_project[0]
     new_owner_id = PROJECT['owner_id'] + 1
     r = client.patch(f"/api/v1/projects/{project['id']}", json={'owner_id': new_owner_id})
@@ -74,17 +87,12 @@ def test_update_change_owner(client, create_project):
     assert r.json()['owner_id'] == new_owner_id
 
 
-def test_update_project_not_exist(client):
+def test_projects_update__nonexistent_project__returns_404(client):
     r = client.patch(f"/api/v1/projects/1", json={'name': PROJECT['name']})
     assert r.status_code == 404, r.json()
 
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
-def test_update_project_none_params(client, create_project):
-    r = client.patch(f"/api/v1/projects/{create_project[0]['id']}", json={})
-    assert r.status_code == 200, r.json()
-
-@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
-def test_update_project_add_member(client, create_project):
+def test_projects_update__empty_payload__returns_200(client, create_project):
     r = client.patch(f"/api/v1/projects/{create_project[0]['id']}", json={})
     assert r.status_code == 200, r.json()

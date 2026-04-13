@@ -45,7 +45,7 @@ class UserService:
         return self._repo.update(user)
 
     def delete(self, id: int) -> None:
-        project = self._repo.get_by_id(id)
-        if not project:
+        user= self._repo.get_by_id(id)
+        if not user:
             raise UserNotFound(id=id)
-        self._repo.delete(project)
+        self._repo.delete(user)

@@ -1,11 +1,10 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.domain.enums import OrderBy, SortBy
 from app.exceptions.task_exceptions import TaskNotFound
+from app.models.common import SearchQueryParams
 from app.models.tasks import TaskCreate, TaskRead, TaskUpdate
-from app.models.common import SearchQuery
 from app.repository.task_repository import TaskRepository
 from app.services.task_service import TaskService
 
@@ -23,20 +22,15 @@ task_service_dep = Annotated[TaskService, Depends(get_task_service)]
 @router.get("/", response_model=List[TaskRead])
 def get_tasks(
     service: task_service_dep,
-    search: Optional[str] = Query(None, description="String that contains in task name"),
-    # filter: FilterBy = Query(description="Attr on which you want to filter by"), TODO this or other implementation idea get task with concrete project
-    sort: SortBy = Query(SortBy.NAME, description="Attr on which you want to sort by"),
-    order: OrderBy = Query(OrderBy.ASC, description="Sort by this order ascending or descending"),
-    page: int = Query(1, ge=1, description="Page number"), 
-    limit: int = Query(10, ge=1, le=100, description="Tasks per page"),
+    search_query_params: Annotated[SearchQueryParams, Query()]
 ):
-    skip = (page - 1) * limit
-
-    # walidacja i czyszczenie inputu
-    if search is not None:
-        search = SearchQuery(search=search).search
-
-    return service.list(skip=skip, limit=limit, sort=sort, order=order, search=search)
+    return service.list(
+        skip=search_query_params.skip, 
+        limit=search_query_params.limit, 
+        sort=search_query_params.sort, 
+        order=search_query_params.order, 
+        search=search_query_params.search
+        )
 
 @router.get("/{task_id}", response_model=TaskRead)
 def get_task(task_id: int, service: task_service_dep):

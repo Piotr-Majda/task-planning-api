@@ -1,13 +1,11 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.domain.enums import OrderBy, SortBy
-from app.exceptions.project_exceptions import ProjectNotFound
 from app.exceptions.user_exceptions import UserNotFound
+from app.models.common import SearchQueryParams
 from app.models.users import UserCreate, UserRead, UserUpdate
-from app.models.common import SearchQuery
 from app.repository.user_repository import UserRepository
 from app.services.user_service import UserService
 
@@ -37,19 +35,15 @@ def get_user(user_id: int, service: user_service_dep):
 @router.get("/", response_model=List[UserRead])
 def get_users(
     service: user_service_dep,
-    search: Optional[str] = Query(None, description="String that contains in user name"),
-    sort: SortBy = Query(SortBy.NAME, description="Attr on which you want to sort by"),
-    order: OrderBy = Query(OrderBy.ASC, description="Sort by this order ascending or descending"),
-    page: int = Query(1, ge=1, description="Page number"), 
-    limit: int = Query(10, ge=1, le=100, description="Users per page"),
+    search_query_params: Annotated[SearchQueryParams, Query()],
 ):
-    skip = (page - 1) * limit
-
-    # walidacja i czyszczenie inputu
-    if search is not None:
-        search = SearchQuery(search=search).search
-
-    return service.list(skip=skip, limit=limit, sort=sort, order=order, search=search)
+    return service.list(
+        skip=search_query_params.skip, 
+        limit=search_query_params.limit, 
+        sort=search_query_params.sort, 
+        order=search_query_params.order, 
+        search=search_query_params.search
+        )
 
 
 @router.delete('/{user_id}', status_code=204)

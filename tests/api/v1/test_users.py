@@ -4,12 +4,18 @@ USER = {
         "name": "Project X", 
 }
 
-def test_create_and_get_user(client):
+def test_users_create__valid_payload__returns_created_user(client):
     r = client.post("/api/v1/users", json=USER)
     assert r.status_code == 200, r.json()
     created_user = r.json()
     assert created_user['name'] == USER['name']
     assert "id" in created_user
+
+
+def test_users_get__existing_user__returns_user(client):
+    create_r = client.post("/api/v1/users", json=USER)
+    assert create_r.status_code == 200, create_r.json()
+    created_user = create_r.json()
 
     get_r = client.get(f"/api/v1/users/{created_user['id']}")
     assert get_r.status_code == 200, get_r.json()
@@ -19,16 +25,23 @@ def test_create_and_get_user(client):
 
 
 @pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
-def test_delete_user(client, create_user):
+def test_users_delete__existing_user__returns_204(client, create_user):
     user = create_user[0]
     r = client.delete(f'/api/v1/users/{user['id']}')
     assert r.status_code == 204, r.json()
+
+
+@pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
+def test_users_delete__already_deleted_user__returns_404(client, create_user):
+    user = create_user[0]
+    delete_r = client.delete(f'/api/v1/users/{user['id']}')
+    assert delete_r.status_code == 204, delete_r.json()
 
     r = client.delete(f'/api/v1/users/{user['id']}')
     assert r.status_code == 404, r.json()
 
 
-def test_update_name_user(client):
+def test_users_update__name_change__returns_updated_user(client):
     r = client.post("/api/v1/users", json=USER)
     assert r.status_code == 200, r.json()
     created_user= r.json()
@@ -41,12 +54,12 @@ def test_update_name_user(client):
     assert user['name'] == created_user['name'] + "."
 
 
-def test_update_user_not_exist(client):
+def test_users_update__nonexistent_user__returns_404(client):
     r = client.patch(f"/api/v1/users/1", json={'name': USER['name']})
     assert r.status_code == 404, r.json()
 
 
 @pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
-def test_update_user_none_params(client, create_user):
+def test_users_update__empty_payload__returns_200(client, create_user):
     r = client.patch(f"/api/v1/users/{create_user[0]['id']}", json={})
     assert r.status_code == 200, r.json()
