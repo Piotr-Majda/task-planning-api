@@ -35,13 +35,13 @@ def get_user(user_id: int, service: user_service_dep):
 @router.get("/", response_model=List[UserRead])
 def get_users(
     service: user_service_dep,
-    search_query_params: Annotated[SearchQueryParams, Query()],
+    search_query_params: Annotated[SearchQueryParams, Query()]
 ):
     return service.list(
-        skip=search_query_params.skip, 
-        limit=search_query_params.limit, 
-        sort=search_query_params.sort, 
-        order=search_query_params.order, 
+        skip=search_query_params.skip,
+        limit=search_query_params.limit,
+        sort=search_query_params.sort,
+        order=search_query_params.order,
         search=search_query_params.search
         )
 

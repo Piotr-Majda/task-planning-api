@@ -76,7 +76,6 @@ def given_twelve_resources(create_resources):
 @pytest.fixture
 def given_search_focus_resources(client, endpoint: str, payload_factory, create_resources):
     create_resources(8)
-    created = []
 
     alpha = client.post(f"/api/v1/{endpoint}", json={**payload_factory(50), "name": "Alpha Focus"})
     beta = client.post(f"/api/v1/{endpoint}", json={**payload_factory(51), "name": "Beta Focus"})
@@ -85,7 +84,7 @@ def given_search_focus_resources(client, endpoint: str, payload_factory, create_
     assert beta.status_code == 200, beta.json()
     assert other.status_code == 200, other.json()
 
-    return created
+    return [alpha, beta, other]
 
 
 def test_listing_contract__default_pagination__returns_first_ten_sorted_by_name(client, endpoint, given_eleven_resources):
