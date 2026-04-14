@@ -14,7 +14,6 @@ def _task_payload(idx: int) -> dict:
 def _project_payload(idx: int) -> dict:
     return {
         "name": f"Project {idx:02d}",
-        "owner_id": 1,
     }
 
 

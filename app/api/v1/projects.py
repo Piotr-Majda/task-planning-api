@@ -1,24 +1,12 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query
 
-from app.db.session import get_db
+from app.api.v1.dependencies import project_service_dep
 from app.exceptions.project_exceptions import ProjectNotFound
 from app.models.common import SearchQueryParams
 from app.models.projects import ProjectCreate, ProjectRead, ProjectUpdate
-from app.repository.project_repository import ProjectRepository
-from app.services.project_service import ProjectService
 
 router = APIRouter(prefix='/projects')
-
-def get_project_repo(db: Session = Depends(get_db))-> ProjectRepository:
-    return ProjectRepository(db)
-
-def get_project_service(task_repo: ProjectRepository = Depends(get_project_repo)):
-    return ProjectService(task_repo)
-
-project_service_dep = Annotated[ProjectService, Depends(get_project_service)]
-
 
 @router.post("/", response_model=ProjectRead)
 def create_project(params: ProjectCreate, service: project_service_dep):
@@ -69,19 +57,16 @@ def delete_project(project_id: int, service: project_service_dep):
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
-def update_project(project_id: int, params: ProjectUpdate, service: project_service_dep):
+def update_project(project_id: int, project_update: ProjectUpdate, service: project_service_dep):
     """
     Status codes:
     - 404: project_id resource not found
     - 200: project updated succesful
     """
-    # Valid task exist
     try:
-        task = service.get(project_id)
+        return service.update(
+            id=project_id,
+            project_update=project_update
+            )
     except ProjectNotFound:
         raise HTTPException(status_code=404, detail=f"Project not found: {project_id}")
-
-    return service.update(
-        id=project_id,
-        params=params
-        )

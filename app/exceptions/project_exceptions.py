@@ -9,3 +9,9 @@ class ProjectNotFound(ProjectException):
     MESSAGE = "Project not found id='{0}'"
     def __init__(self, id: int) -> None:
             self.message = self.MESSAGE.format(id)
+
+
+class OwnerNotFound(ProjectException):
+    MESSAGE = "Owner not found id='{0}'"
+    def __init__(self, id: int) -> None:
+            self.message = self.MESSAGE.format(id)

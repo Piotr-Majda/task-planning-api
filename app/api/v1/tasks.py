@@ -1,23 +1,11 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from app.db.session import get_db
+from fastapi import APIRouter, HTTPException, Query
+from app.api.v1.dependencies import task_service_dep
 from app.exceptions.task_exceptions import TaskNotFound
 from app.models.common import SearchQueryParams
 from app.models.tasks import TaskCreate, TaskRead, TaskUpdate
-from app.repository.task_repository import TaskRepository
-from app.services.task_service import TaskService
 
 router = APIRouter(prefix="/tasks")
-
-def get_task_repo(db: Session = Depends(get_db))-> TaskRepository:
-    return TaskRepository(db)
-
-def get_task_service(task_repo: TaskRepository = Depends(get_task_repo)):
-    return TaskService(task_repo)
-
-task_service_dep = Annotated[TaskService, Depends(get_task_service)]
-
 
 @router.get("/", response_model=List[TaskRead])
 def get_tasks(

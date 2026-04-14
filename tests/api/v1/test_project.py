@@ -2,8 +2,14 @@ import pytest
 
 PROJECT = {
         "name": "Project X", 
+}
+
+
+PROJECT_1 = {
+        "name": "Project X", 
         'owner_id': 1
 }
+
 
 TASK = {
         "name": "Test Task", 
@@ -13,12 +19,33 @@ TASK = {
         'project_id': 1
 }
 
-def test_projects_create__valid_payload__returns_created_project(client):
+USER = {
+        "name": "User X", 
+}
+
+def test_projects_create__without_owner__returns_project_with_owner_none(client):
     r = client.post("/api/v1/projects", json=PROJECT)
     assert r.status_code == 200, r.json()
     created_project = r.json()
     assert created_project['name'] == PROJECT['name']
     assert "id" in created_project
+
+
+@pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
+def test_projects_create__existing_owner_id__returns_project_with_owner(client, create_user):
+    project_payload = PROJECT.copy()
+    project_payload.update({"owner_id": create_user[0]['id']})
+    r = client.post("/api/v1/projects", json=project_payload)
+    assert r.status_code == 200, r.json()
+    created_project = r.json()
+    assert created_project['name'] == project_payload['name']
+    assert created_project['owner_id'] == project_payload['owner_id']
+    assert "id" in created_project
+
+
+def test_projects_create__nonexistent_owner_id__returns_400(client):
+    r = client.post("/api/v1/projects", json=PROJECT_1)
+    assert r.status_code == 400, r.json()
 
 
 def test_projects_get__existing_project__returns_project(client):
@@ -30,8 +57,8 @@ def test_projects_get__existing_project__returns_project(client):
     assert get_r.status_code == 200, get_r.json()
     fetched_project = get_r.json()
     assert fetched_project['id'] == created_project['id']
-    assert fetched_project['name'] == PROJECT['name']
-    assert fetched_project['owner_id'] == PROJECT['owner_id']
+    assert fetched_project['name'] == created_project['name']
+    assert fetched_project['owner_id'] == created_project['owner_id']
 
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
@@ -79,13 +106,27 @@ def test_projects_update__name_change__returns_updated_project(client):
 
 
 @pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
-def test_projects_update__owner_change__returns_updated_owner(client, create_project):
-    project = create_project[0]
-    new_owner_id = PROJECT['owner_id'] + 1
-    r = client.patch(f"/api/v1/projects/{project['id']}", json={'owner_id': new_owner_id})
+@pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
+def test_projects_update__owner_change_to_existing_user__returns_200(client, create_project, create_user):
+    project_id = create_project[0]['id']
+    new_owner_id = create_user[0]['id']
+    r = client.patch(f"/api/v1/projects/{project_id}", json={'owner_id': new_owner_id})
     assert r.status_code == 200, r.json()
     assert r.json()['owner_id'] == new_owner_id
 
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+def test_projects_update__owner_change_to_nonexistent_user__returns_400(client, create_project):
+    project = create_project[0]
+    r = client.patch(f"/api/v1/projects/{project['id']}", json={'owner_id': 1})
+    assert r.status_code == 400, r.json()
+
+
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+def test_projects_update__owner_set_to_none__returns_200_and_owner_none(client, create_project):
+    project = create_project[0]
+    r = client.patch(f"/api/v1/projects/{project['id']}", json={'owner_id': None})
+    assert r.status_code == 200, r.json()
+    assert r.json()['owner_id'] is None
 
 def test_projects_update__nonexistent_project__returns_404(client):
     r = client.patch(f"/api/v1/projects/1", json={'name': PROJECT['name']})

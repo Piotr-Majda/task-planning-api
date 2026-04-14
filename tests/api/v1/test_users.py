@@ -1,7 +1,11 @@
 import pytest
 
 USER = {
-        "name": "Project X", 
+        "name": "User X", 
+}
+
+PROJECT = {
+    "name": "Project X", 
 }
 
 def test_users_create__valid_payload__returns_created_user(client):
@@ -40,6 +44,22 @@ def test_users_delete__already_deleted_user__returns_404(client, create_user):
     r = client.delete(f'/api/v1/users/{user['id']}')
     assert r.status_code == 404, r.json()
 
+
+@pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
+@pytest.mark.parametrize('create_project', [[PROJECT] * 3], indirect=True)
+def test_users_delete__owned_projects_owner_is_set_to_none(client, create_user, create_project):
+    for project in create_project:
+        r = client.patch(f"/api/v1/projects/{project['id']}", json={'owner_id': create_user[0]['id']})
+        assert r.status_code == 200, r.json()
+        assert r.json()['owner_id'] == create_user[0]['id']
+ 
+    r = client.delete(f"/api/v1/users/{create_user[0]['id']}")
+    assert r.status_code == 204, r.json()
+
+    for project in create_project:
+        r = client.get(f"/api/v1/projects/{project['id']}")
+        assert r.status_code == 200, r.json()
+        assert r.json()['owner_id'] is None
 
 def test_users_update__name_change__returns_updated_user(client):
     r = client.post("/api/v1/users", json=USER)

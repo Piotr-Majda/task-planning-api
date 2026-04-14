@@ -1,24 +1,13 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query
 
-from app.db.session import get_db
+
+from app.api.v1.dependencies import user_service_dep
 from app.exceptions.user_exceptions import UserNotFound
 from app.models.common import SearchQueryParams
 from app.models.users import UserCreate, UserRead, UserUpdate
-from app.repository.user_repository import UserRepository
-from app.services.user_service import UserService
 
 router = APIRouter(prefix='/users')
-
-def get_user_repo(db: Session = Depends(get_db))-> UserRepository:
-    return UserRepository(db)
-
-def get_user_service(repo: UserRepository = Depends(get_user_repo)):
-    return UserService(repo)
-
-user_service_dep = Annotated[UserService, Depends(get_user_service)]
-
 
 @router.post("/", response_model=UserRead)
 def create_user(params: UserCreate, service: user_service_dep):
