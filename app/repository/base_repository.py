@@ -1,6 +1,6 @@
-from typing import Generic, List, Optional, Type, TypeVar
+from typing import Generic, List, Optional, Type, TypeVar, cast
 from sqlalchemy.orm import Session
-from sqlalchemy import ColumnElement, desc
+from sqlalchemy import Column, ColumnElement
 from app.db.schema import Base
 from app.domain.enums import OrderBy, SortBy
 
@@ -36,7 +36,8 @@ class BaseRepository(Generic[T]):
             column = getattr(self._model, sort_by.value, None)
             if column is None:
                 raise ValueError(f"Model {self._model} not has sort field: {sort_by}")
-            query = query.order_by(desc(column) if order == OrderBy.DESC else column)
+            column = cast(Column, column)
+            query = query.order_by(column.desc() if order == OrderBy.DESC else column.asc())
 
         return query.offset(skip).limit(limit).all()
     

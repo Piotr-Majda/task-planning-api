@@ -176,3 +176,31 @@ def test_project_add_member__project_not_exist__returns_404(client, create_user)
     new_member_id = create_user[0]['id']
     r = client.post(f"/api/v1/projects/1/members", json={'user_id': new_member_id})
     assert r.status_code == 404, r.json()
+
+@pytest.mark.parametrize('create_user', [[USER] * 11], indirect=True)
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+def test_project_list_members__eleven_members_given__returns_11_members(client, create_project, create_user):
+    project_id = create_project[0]['id']
+    for memeber in create_user:
+        r = client.post(f"/api/v1/projects/{project_id}/members", json={'user_id': memeber['id']})
+        assert r.status_code == 200, r.json()
+    excepted_members = sorted([m['id'] for m in create_user])
+
+    r = client.get(f"/api/v1/projects/{project_id}/members")
+    assert r.status_code == 200, r.json()
+    present_members = [m['user_id'] for m in r.json()]
+    assert present_members == excepted_members
+
+
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+def test_project_list_members__zero_given__returns_0_members(client, create_project):
+    project_id = create_project[0]['id']
+    r = client.get(f"/api/v1/projects/{project_id}/members")
+    assert r.status_code == 200, r.json()
+    present_members = [m['user_id'] for m in r.json()]
+    assert present_members == []
+
+
+def test_project_list_members__project_nonexists__returns_404(client):
+    r = client.get(f"/api/v1/projects/1/members")
+    assert r.status_code == 404, r.json()

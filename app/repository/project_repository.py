@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import List, Optional, Type
 
 from sqlalchemy.orm import Session
 
@@ -28,3 +28,8 @@ class ProjectRepository(BaseRepository[Project]):
             ProjectMember.project_id==project_id,
             ProjectMember.user_id==user_id
         ).first()
+
+    def get_all_members(self, project_id: int) -> List[ProjectMember]:
+        return self._db.query(ProjectMember).filter(
+            ProjectMember.project_id==project_id
+        ).order_by(ProjectMember.user_id.asc()).all()

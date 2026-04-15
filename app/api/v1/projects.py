@@ -46,8 +46,8 @@ def delete_project(project_id: int, service: project_service_dep):
     - No cascade delete
     
     Status codes:
-    - 204: Task deleted
-    - 404: Task not found
+    - 204: Project deleted
+    - 404: Project not found
     """
     try:
         service.delete(project_id)
@@ -94,18 +94,15 @@ def add_member(project_id:int, new_member: NewProjectMember, service: project_se
     except ProjectMemberAlreadyExists as e:
         raise HTTPException(status_code=409, detail=e.message)
 
-# @router.get("/", response_model=List[ProjectRead])
-# def get_members(
-#     service: project_service_dep,
-#     search_query_params: Annotated[SearchQueryParams, Query()]
-# ):
-#     return service.list(
-#         skip=search_query_params.skip, 
-#         limit=search_query_params.limit, 
-#         sort=search_query_params.sort, 
-#         order=search_query_params.order, 
-#         search=search_query_params.search
-#         )
+@router.get("/{project_id}/members", response_model=List[ProjectMemberRead])
+def get_members(
+    project_id: int,
+    service: project_service_dep,
+):
+    try:
+        return service.list_members(project_id=project_id)
+    except ProjectNotFound as e:
+        raise HTTPException(status_code=404, detail=e.message)
 
 # @router.delete('/{project_id}', status_code=204)
 # def remove_member(project_id: int, service: project_service_dep):

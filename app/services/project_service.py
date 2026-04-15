@@ -92,3 +92,7 @@ class ProjectService:
             project_id=project_id, 
             user_id=user_id
             )
+
+    def list_members(self, project_id: int) -> List[ProjectMember]:
+        self.validate_project_exists(project_id)
+        return self._project_repo.get_all_members(project_id=project_id)

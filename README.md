@@ -203,7 +203,12 @@ Task owner update is planned and currently not implemented.
 ```
 #### Get Members
 `GET /projects/{id}/members`
-Not implemented yet.
+Responses:
+- `200 OK`: returns project members
+- `404 Not Found`: project does not exist
+
+Notes:
+- Members are returned ordered by `user_id` ascending for deterministic output.
 
 #### Add Member
 `POST /projects/{id}/members`
@@ -262,8 +267,9 @@ Not implemented yet.
 - Implemented: Shared list contract (`search`, `sort`, `order`, `page`, `limit`).
 - Implemented: Project owner assignment validation and owner cleanup on user deletion.
 - Implemented: Add project member endpoint with duplicate-membership validation.
+- Implemented: Get project members endpoint.
 - Planned: Task owner assignment and owner cleanup on user deletion.
-- Planned: Get/remove project member endpoints.
+- Planned: Remove project member endpoint.
 - Planned: Additional task filters (`status`, `project_id`) and list-by-parent endpoint.
 
 ## Missing / Things To Consider Next
