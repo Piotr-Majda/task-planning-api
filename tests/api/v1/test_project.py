@@ -137,3 +137,42 @@ def test_projects_update__nonexistent_project__returns_404(client):
 def test_projects_update__empty_payload__returns_200(client, create_project):
     r = client.patch(f"/api/v1/projects/{create_project[0]['id']}", json={})
     assert r.status_code == 200, r.json()
+
+
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+@pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
+def test_project_add_member__valid_payload__returns_200(client, create_project, create_user):
+    project_id = create_project[0]['id']
+    new_member_id = create_user[0]['id']
+    r = client.post(f"/api/v1/projects/{project_id}/members", json={'user_id': new_member_id})
+    assert r.status_code == 200, r.json()
+    assert r.json()['user_id'] == new_member_id
+    assert r.json()['project_id'] == project_id
+
+
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+@pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
+def test_project_add_member__add_member_twice__second_call_returns_409(client, create_project, create_user):
+    project_id = create_project[0]['id']
+    new_member_id = create_user[0]['id']
+    r = client.post(f"/api/v1/projects/{project_id}/members", json={'user_id': new_member_id})
+    assert r.status_code == 200, r.json()
+    assert r.json()['user_id'] == new_member_id
+    assert r.json()['project_id'] == project_id
+
+    r = client.post(f"/api/v1/projects/{project_id}/members", json={'user_id': new_member_id})
+    assert r.status_code == 409, r.json()
+
+
+@pytest.mark.parametrize('create_project', [[PROJECT] * 1], indirect=True)
+def test_project_add_member__user_not_exist__returns_404(client, create_project):
+    project_id = create_project[0]['id']
+    r = client.post(f"/api/v1/projects/{project_id}/members", json={'user_id': 1})
+    assert r.status_code == 404, r.json()
+
+
+@pytest.mark.parametrize('create_user', [[USER] * 1], indirect=True)
+def test_project_add_member__project_not_exist__returns_404(client, create_user):
+    new_member_id = create_user[0]['id']
+    r = client.post(f"/api/v1/projects/1/members", json={'user_id': new_member_id})
+    assert r.status_code == 404, r.json()

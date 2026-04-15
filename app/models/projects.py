@@ -23,3 +23,12 @@ class ProjectRead(BaseModel):
 class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(max_length=NAME_MAX_LEN, default=None)
     owner_id: Optional[int] = None
+
+
+class NewProjectMember(BaseModel):
+    user_id: int
+
+
+class ProjectMemberRead(BaseModel):
+    user_id: int
+    project_id: int

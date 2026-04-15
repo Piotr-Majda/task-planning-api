@@ -43,7 +43,7 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 
 ### Project
 - Has an owner (User)
-- Has members (Users) - Not implemented yet
+- Has members (Users)
 - Contains tasks
 
 ---
@@ -63,7 +63,8 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - User can remove project owner (`owner_id = null`)
 - User can assign an owner to task (`owner_id`) - Not implemented yet
 - User can remove task owner (`owner_id = null`) - Not implemented yet
-- User can add and remove project members - Not implemented yet
+- User can add project members
+- User can remove project members - Not implemented yet
 
 ---
 
@@ -78,6 +79,8 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - Project owner assignment is optional (`owner_id` can be `null`)
 - If project owner is provided, user must exist
 - Deleting a user sets `project.owner_id = null`
+- Project member can be added only when both project and user exist
+- Duplicate project membership is rejected (`409 Conflict`)
 - Task owner assignment should follow the same rule as project owner - Not implemented yet
 
 ---
@@ -129,7 +132,7 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 Constraint: (`user_id`, `project_id`) must be unique.
 
 ### Relationships
-- User ↔ Project (many-to-many via ProjectMember) - Not implemented yet
+- User ↔ Project (many-to-many via `ProjectMember`)
 - User → Project (owner)
 - User → Task (owner) - Not implemented yet
 - Project → Task (one-to-many)
@@ -198,6 +201,9 @@ Task owner update is planned and currently not implemented.
   "owner_id": 1
 }
 ```
+#### Get Members
+`GET /projects/{id}/members`
+Not implemented yet.
 
 #### Add Member
 `POST /projects/{id}/members`
@@ -206,10 +212,13 @@ Task owner update is planned and currently not implemented.
   "user_id": 1
 }
 ```
-Not implemented yet.
+Responses:
+- `200 OK`: member added, returns created membership
+- `404 Not Found`: project or user does not exist
+- `409 Conflict`: user is already a member of this project
 
 #### Remove Member
-`DELETE /projects/{id}/members`
+`DELETE /projects/{id}/members/{user_id}`
 ```json
 {
   "user_id": 1
@@ -252,8 +261,9 @@ Not implemented yet.
 - Implemented: Task hierarchy rules (no cycle, no self-parent, project consistency).
 - Implemented: Shared list contract (`search`, `sort`, `order`, `page`, `limit`).
 - Implemented: Project owner assignment validation and owner cleanup on user deletion.
+- Implemented: Add project member endpoint with duplicate-membership validation.
 - Planned: Task owner assignment and owner cleanup on user deletion.
-- Planned: Project member endpoints and membership rules.
+- Planned: Get/remove project member endpoints.
 - Planned: Additional task filters (`status`, `project_id`) and list-by-parent endpoint.
 
 ## Missing / Things To Consider Next

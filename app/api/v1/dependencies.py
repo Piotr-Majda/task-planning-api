@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -10,7 +10,6 @@ from app.services.project_service import ProjectService
 from app.services.task_service import TaskService
 from app.services.user_service import UserService
 
-router = APIRouter(prefix='/projects')
 
 def get_project_repo(db: Session = Depends(get_db))-> ProjectRepository:
     return ProjectRepository(db)
