@@ -31,3 +31,9 @@ class ProjectMemberAlreadyExists(ProjectException):
     def __init__(self, project_id: int, user_id: int) -> None:
         message = self.MESSAGE.format(user_id, project_id)
         super().__init__(message)
+
+class MembershipNotFound(ProjectException):
+    MESSAGE = "Project membership with user id '{0}' does not exist in project id '{1}'"
+    def __init__(self, project_id: int, user_id: int) -> None:
+        message = self.MESSAGE.format(user_id, project_id)
+        super().__init__(message)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.constants import NAME_MAX_LEN
@@ -25,7 +25,7 @@ class ProjectUpdate(BaseModel):
     owner_id: Optional[int] = None
 
 
-class NewProjectMember(BaseModel):
+class ProjectMemberCreate(BaseModel):
     user_id: int
 
 

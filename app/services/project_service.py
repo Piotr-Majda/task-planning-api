@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from app.db.schema import Project, ProjectMember, User
 from app.domain.enums import OrderBy, SortBy
-from app.exceptions.project_exceptions import MemberNotFound, ProjectMemberAlreadyExists, OwnerNotFound, ProjectNotFound
+from app.exceptions.project_exceptions import MemberNotFound, MembershipNotFound, ProjectMemberAlreadyExists, OwnerNotFound, ProjectNotFound
 from app.models.projects import ProjectCreate, ProjectUpdate
 from app.repository.project_repository import ProjectRepository
 from app.repository.user_repository import UserRepository
@@ -75,6 +75,14 @@ class ProjectService:
         if entity is None:
             raise ProjectNotFound(id)
 
+    def validate_membership_in_project(self, project_id: int, user_id: int):
+        entity = self._project_repo.get_member(project_id, user_id)
+        if entity is None:
+            raise MembershipNotFound(
+                project_id=project_id, 
+                user_id=user_id
+                )
+
     # ════════════════════════════════════════════════════════════
     # MEMBERS
     # ════════════════════════════════════════════════════════════
@@ -96,3 +104,11 @@ class ProjectService:
     def list_members(self, project_id: int) -> List[ProjectMember]:
         self.validate_project_exists(project_id)
         return self._project_repo.get_all_members(project_id=project_id)
+
+    def remove_membership(self, project_id: int, user_id: int):
+        self.validate_project_exists(project_id)
+        self.validate_membership_in_project(project_id=project_id, user_id=user_id)
+        self._project_repo.remove_membership(
+            project_id=project_id,
+            user_id=user_id
+            )

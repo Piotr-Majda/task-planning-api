@@ -2,7 +2,7 @@ from typing import Annotated, List
 from fastapi import APIRouter, HTTPException, Query
 
 
-from app.api.v1.dependencies import user_service_dep
+from app.api.v1.dependencies import user_service_dep, _http_error
 from app.exceptions.user_exceptions import UserNotFound
 from app.models.common import SearchQueryParams
 from app.models.users import UserCreate, UserRead, UserUpdate
@@ -17,8 +17,8 @@ def create_user(params: UserCreate, service: user_service_dep):
 def get_user(user_id: int, service: user_service_dep):
     try:
         return service.get(user_id)
-    except UserNotFound:
-        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    except UserNotFound as e:
+        raise _http_error(status_code=404, code=e.code, detail=e.message)
 
 
 @router.get("/", response_model=List[UserRead])
@@ -53,9 +53,8 @@ def delete_user(user_id: int, service: user_service_dep):
     """
     try:
         service.delete(user_id)
-        return {"detail": "User deleted"}
-    except UserNotFound:
-        raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
+    except UserNotFound as e:
+        raise _http_error(status_code=404, code=e.code, detail=e.message)
 
 
 @router.patch("/{user_id}", response_model=UserRead)
@@ -68,8 +67,8 @@ def update_user(user_id: int, params: UserUpdate, service: user_service_dep):
     # Valid task exist
     try:
         user = service.get(user_id)
-    except UserNotFound:
-        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    except UserNotFound as e:
+        raise _http_error(status_code=404, code=e.code, detail=e.message)
 
     return service.update(
         id=user_id,

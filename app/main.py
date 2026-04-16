@@ -1,7 +1,7 @@
 
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from app.core.config import config
 from app.core.logging import setup_logging
@@ -40,9 +40,25 @@ async def buisnes_error_handler(
     return JSONResponse(
         status_code=400,
         content={
+            'code': exc.code,
             'detail': exc.message
         }
     )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(
+    request: Request,
+    exc: HTTPException
+):
+    if isinstance(exc.detail, dict) and 'code' in exc.detail and 'detail' in exc.detail:
+        content = exc.detail
+    else:
+        content = {
+            "code": "http_error",
+            "detail": exc.detail,
+        }
+    return JSONResponse(status_code=exc.status_code, content=content, headers=exc.headers)
 
 @app.middleware('http')
 async def handle_logging(request: Request, call_next):

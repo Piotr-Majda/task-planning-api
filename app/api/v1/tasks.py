@@ -1,6 +1,6 @@
 from typing import Annotated, List
 from fastapi import APIRouter, HTTPException, Query
-from app.api.v1.dependencies import task_service_dep
+from app.api.v1.dependencies import task_service_dep, _http_error
 from app.exceptions.task_exceptions import TaskNotFound
 from app.models.common import SearchQueryParams
 from app.models.tasks import TaskCreate, TaskRead, TaskUpdate
@@ -24,8 +24,8 @@ def get_tasks(
 def get_task(task_id: int, service: task_service_dep):
     try:
         return service.get_task(task_id)
-    except TaskNotFound:
-        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    except TaskNotFound as e:
+        raise _http_error(status_code=404, code=e.code, detail=e.message)
 
 @router.post('/', response_model=TaskRead)
 def create_task(params: TaskCreate, service: task_service_dep):
@@ -34,8 +34,8 @@ def create_task(params: TaskCreate, service: task_service_dep):
     if parent_id:
         try:
             parent_task = service.get_task(parent_id)
-        except TaskNotFound:
-            raise HTTPException(status_code=400, detail=f"Reference parent task not found: {parent_id}")
+        except TaskNotFound as e:
+            raise _http_error(status_code=400, code="reference_parent_task_not_found", detail=e.message)
         service.validate_project_consistency(
             parent_project_id=parent_task.project_id, 
             task_project_id=params.project_id
@@ -61,8 +61,8 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     # Valid task exist
     try:
         task = service.get_task(task_id)
-    except TaskNotFound:
-        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    except TaskNotFound as e:
+        raise _http_error(status_code=404, code=e.code, detail=e.message)
     
     parent_id = params.parent_id
     
@@ -74,8 +74,8 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
 
         try:
             parent_task = service.get_task(parent_id)
-        except TaskNotFound:
-            raise HTTPException(status_code=400, detail=f"Reference parent task not found: {parent_id}")
+        except TaskNotFound as e:
+            raise _http_error(status_code=400, code="reference_parent_task_not_found", detail=e.message)
         service.validate_project_consistency(
             parent_project_id=parent_task.project_id, 
             task_project_id=params.project_id
@@ -110,6 +110,5 @@ def delete_task(task_id: int, service: task_service_dep):
     """
     try:
         service.delete_task(task_id=task_id)
-        return {"detail": "Task deleted"}
-    except TaskNotFound:
-        raise HTTPException(status_code=404, detail=f"Task with id {task_id} not found")
+    except TaskNotFound as e:
+        raise _http_error(status_code=404, code=e.code, detail=e.message)

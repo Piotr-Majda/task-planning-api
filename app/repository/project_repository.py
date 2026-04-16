@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -33,3 +33,9 @@ class ProjectRepository(BaseRepository[Project]):
         return self._db.query(ProjectMember).filter(
             ProjectMember.project_id==project_id
         ).order_by(ProjectMember.user_id.asc()).all()
+
+    def remove_membership(self, project_id: int, user_id: int):
+        project_member = self.get_member(project_id, user_id)
+        if project_member:
+            self._db.delete(project_member)
+            self._db.commit()

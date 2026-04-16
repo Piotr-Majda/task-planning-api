@@ -64,7 +64,7 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - User can assign an owner to task (`owner_id`) - Not implemented yet
 - User can remove task owner (`owner_id = null`) - Not implemented yet
 - User can add project members
-- User can remove project members - Not implemented yet
+- User can remove project members
 
 ---
 
@@ -81,6 +81,7 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - Deleting a user sets `project.owner_id = null`
 - Project member can be added only when both project and user exist
 - Duplicate project membership is rejected (`409 Conflict`)
+- Membership removal is strict and returns `404` when project or membership does not exist
 - Task owner assignment should follow the same rule as project owner - Not implemented yet
 
 ---
@@ -141,7 +142,6 @@ Constraint: (`user_id`, `project_id`) must be unique.
 ---
 
 ## 5) API Endpoints
-
 ### Tasks
 #### Create Task
 `POST /tasks`
@@ -224,12 +224,9 @@ Responses:
 
 #### Remove Member
 `DELETE /projects/{id}/members/{user_id}`
-```json
-{
-  "user_id": 1
-}
-```
-Not implemented yet.
+Responses:
+- `204 No Content`: membership removed
+- `404 Not Found`: project does not exist or membership is missing
 
 #### Get Project
 `GET /projects/{id}`
@@ -258,7 +255,30 @@ Not implemented yet.
 #### Delete User
 `DELETE /users/{id}`
 
----
+### Error Response Contract
+Business and application errors use a stable response shape:
+
+```json
+{
+  "code": "membership_not_found",
+  "detail": "Project membership with user id '1' does not exist in project id '1'"
+}
+```
+
+Decision:
+- `code` is the stable machine-readable contract for API integrations
+- `detail` is the human-readable explanation and may change over time
+
+Why this decision was made:
+- tests should validate stable public API contract, not fragile message wording
+- frontend and other API consumers can branch on `code` safely
+- `detail` can be improved or rewritten without breaking integrations
+
+Guidelines:
+- assert `status_code` and `code` in integration tests for business errors
+- avoid asserting exact `detail` text unless the message itself is part of the contract
+- keep `code` values intentional and stable across refactors
+
 
 ## Current MVP Scope
 
@@ -268,8 +288,8 @@ Not implemented yet.
 - Implemented: Project owner assignment validation and owner cleanup on user deletion.
 - Implemented: Add project member endpoint with duplicate-membership validation.
 - Implemented: Get project members endpoint.
+- Implemented: Remove project member endpoint with strict not-found validation.
 - Planned: Task owner assignment and owner cleanup on user deletion.
-- Planned: Remove project member endpoint.
 - Planned: Additional task filters (`status`, `project_id`) and list-by-parent endpoint.
 
 ## Missing / Things To Consider Next
@@ -278,3 +298,10 @@ Not implemented yet.
 - Membership policy: should project owner be required to be a member.
 - Task assignment policy: any user vs only project members.
 - Deployment readiness for cloud: env configuration, migration strategy, health checks, and logging/monitoring.
+
+
+## Future Enhancements
+- Smart risk alerts based on project activity and deadlines
+- Progress estimation using velocity metrics
+- Historical analysis of estimation vs actual effort
+- AI-powered project insights and explanations

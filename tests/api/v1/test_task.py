@@ -3,31 +3,6 @@ import datetime
 import pytest
 import random
 
-
-TASK = {
-        "name": "Test Task", 
-        "content": "description", 
-        "deadline": "2026-03-20T00:00:00",
-        "priority": "MAJOR",
-        'project_id': 1
-}
-
-TASK_SECOND = {
-        "name": "Test Task 2", 
-        "content": "description", 
-        "deadline": "2026-03-20T00:00:00",
-        "priority": "MINOR"
-}
-
-
-TASK_THIRD = {
-        "name": "Test Task 2", 
-        "content": "description", 
-        "deadline": "2026-03-20T00:00:00",
-        "priority": "MINOR"
-}
-
-
 def generate_task_data() -> dict:
     dt = datetime.datetime(2026, 5, 1) + random.random() * datetime.timedelta(days=30)
     return {
@@ -38,68 +13,75 @@ def generate_task_data() -> dict:
 }
 
 
-def test_tasks_create__valid_payload__returns_created_task(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def _task_batch(count: int) -> list[dict]:
+    return [{
+        "name": "Test Task",
+        "content": "description",
+        "deadline": "2026-03-20T00:00:00",
+        "priority": "MAJOR",
+        "project_id": 1,
+    } for _ in range(count)]
+
+
+def test_tasks_create__valid_payload__returns_created_task(client, task_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
-    assert created_task['name'] == TASK['name']
+    assert created_task['name'] == task_payload['name']
     assert "id" in created_task
 
 
-def test_tasks_get__existing_task__returns_task(client):
-    create_r = client.post("/api/v1/tasks", json=TASK)
-    assert create_r.status_code == 200, create_r.json()
-    created_task = create_r.json()
-
+def test_tasks_get__existing_task__returns_task(client, existing_task, task_payload):
+    created_task = existing_task
     get_r = client.get(f"/api/v1/tasks/{created_task['id']}")
     assert get_r.status_code == 200, get_r.json()
     fetched_task = get_r.json()
     assert fetched_task['id'] == created_task['id']
-    assert fetched_task['name'] == TASK['name']
-    assert fetched_task['content'] == TASK['content']
-    assert fetched_task['deadline'] == TASK['deadline']
-    assert fetched_task['project_id'] == TASK["project_id"]
-    assert fetched_task['priority'].upper() == TASK["priority"]
-    assert fetched_task['project_id'] == TASK['project_id']
+    assert fetched_task['name'] == task_payload['name']
+    assert fetched_task['content'] == task_payload['content']
+    assert fetched_task['deadline'] == task_payload['deadline']
+    assert fetched_task['project_id'] == task_payload["project_id"]
+    assert fetched_task['priority'].upper() == task_payload["priority"]
+    assert fetched_task['project_id'] == task_payload['project_id']
 
 
-def test_tasks_create__missing_name__returns_422(client):
-    task = TASK.copy()
+def test_tasks_create__missing_name__returns_422(client, task_payload):
+    task = task_payload
     task['name'] = None
     r = client.post("/api/v1/tasks", json=task)
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_create__missing_content__returns_422(client):
-    task = TASK.copy()
+def test_tasks_create__missing_content__returns_422(client, task_payload):
+    task = task_payload
     task['content'] = None
     r = client.post("/api/v1/tasks", json=task)
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_create__missing_priority__returns_422(client):
-    task = TASK.copy()
+def test_tasks_create__missing_priority__returns_422(client, task_payload):
+    task = task_payload
     task['priority'] = None
     r = client.post("/api/v1/tasks", json=task)
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_create__missing_deadline__returns_422(client):
-    task = TASK.copy()
+def test_tasks_create__missing_deadline__returns_422(client, task_payload):
+    task = task_payload
     task['deadline'] = None
     r = client.post("/api/v1/tasks", json=task)
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_create__invalid_priority__returns_422(client):
-    task = TASK.copy()
+def test_tasks_create__invalid_priority__returns_422(client, task_payload):
+    task = task_payload
     task['priority'] = 'not minor'
     r = client.post("/api/v1/tasks", json=task)
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_create__hour_only_deadline__normalizes_to_full_time(client):
-    task = TASK.copy()
+def test_tasks_create__hour_only_deadline__normalizes_to_full_time(client, task_payload):
+    task = task_payload
     task['deadline'] = '2026-03-20T10'
 
     r = client.post("/api/v1/tasks", json=task)
@@ -109,49 +91,50 @@ def test_tasks_create__hour_only_deadline__normalizes_to_full_time(client):
     assert created_task['deadline'].startswith("2026-03-20T10:00:00")
 
 
-def test_tasks_create__invalid_deadline_format__returns_422(client):
-    task = TASK.copy()
+def test_tasks_create__invalid_deadline_format__returns_422(client, task_payload):
+    task = task_payload
     task['deadline'] = '2026/03/20'
 
     r = client.post("/api/v1/tasks", json=task)
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_create__existing_parent_id__creates_child_task(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_create__existing_parent_id__creates_child_task(client, task_payload, task_second_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
-    assert created_task['name'] == TASK['name']
+    assert created_task['name'] == task_payload['name']
     assert "id" in created_task
 
-    task_second = TASK_SECOND.copy()
+    task_second = task_second_payload
 
     task_second['parent_id'] = created_task['id']
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 200, s_r.json()
     created_children_task = s_r.json()
-    assert created_children_task['name'] == TASK_SECOND['name']
-    assert created_children_task['content'] == TASK_SECOND['content']
-    assert created_children_task['deadline'] == TASK_SECOND["deadline"]
-    assert created_children_task['priority'].upper() == TASK_SECOND["priority"]
+    assert created_children_task['name'] == task_second_payload['name']
+    assert created_children_task['content'] == task_second_payload['content']
+    assert created_children_task['deadline'] == task_second_payload["deadline"]
+    assert created_children_task['priority'].upper() == task_second_payload["priority"]
     assert created_children_task['parent_id'] == created_task['id']
     assert created_children_task['project_id'] == created_task['project_id']
 
 
-def test_tasks_create__nonexistent_parent_id__returns_400(client):
-    task_second = TASK_SECOND.copy()
+def test_tasks_create__nonexistent_parent_id__returns_400(client, task_second_payload):
+    task_second = task_second_payload
     task_second['parent_id'] = '2'
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 400, s_r.json()
+    assert s_r.json()["code"] == "reference_parent_task_not_found"
 
-def test_tasks_create__parent_project_mismatch__returns_400(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_create__parent_project_mismatch__returns_400(client, task_payload, task_second_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
-    assert created_task['name'] == TASK['name']
+    assert created_task['name'] == task_payload['name']
     assert "id" in created_task
 
-    task_second = TASK_SECOND.copy()
+    task_second = task_second_payload
 
     task_second['parent_id'] = created_task['id']
     task_second['project_id'] = created_task['project_id'] + 1
@@ -159,19 +142,19 @@ def test_tasks_create__parent_project_mismatch__returns_400(client):
     assert s_r.status_code == 400, s_r.json()
 
 
-def test_tasks_create__same_parent_for_two_children__returns_200(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_create__same_parent_for_two_children__returns_200(client, task_payload, task_second_payload, task_third_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
-    task_second = TASK_SECOND.copy()
+    task_second = task_second_payload
     
     task_second['parent_id'] = created_task['id']
     task_second['project_id'] = created_task['project_id']
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 200, s_r.json()
 
-    task_third = TASK_THIRD.copy()
+    task_third = task_third_payload
 
     task_third['parent_id'] = created_task['id']
     task_third['project_id'] = created_task['project_id']
@@ -179,19 +162,19 @@ def test_tasks_create__same_parent_for_two_children__returns_200(client):
     assert s_r.status_code == 200, s_r.json()
 
 
-def test_tasks_create__second_level_child__returns_200(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_create__second_level_child__returns_200(client, task_payload, task_second_payload, task_third_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
-    task_second = TASK_SECOND.copy()
+    task_second = task_second_payload
 
     task_second['parent_id'] = created_task['id']
     task_second['project_id'] = created_task['project_id']
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 200, s_r.json()
 
-    task_third = TASK_THIRD.copy()
+    task_third = task_third_payload
 
     task_third['parent_id'] = s_r.json()['id']
     task_third['project_id'] = s_r.json()['project_id']
@@ -199,109 +182,84 @@ def test_tasks_create__second_level_child__returns_200(client):
     assert s_r.status_code == 200, s_r.json()
 
 
-def test_tasks_update__name_change__returns_updated_task(client):
-    r = client.post("/api/v1/tasks", json=TASK)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-
-    r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'name': TASK['name'] + "."})
+def test_tasks_update__name_change__returns_updated_task(client, existing_task, task_payload):
+    created_task = existing_task
+    r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'name': task_payload['name'] + "."})
     assert r.status_code == 200, r.json()
     task = r.json()
     assert created_task['id'] == task['id']
     assert created_task['name'] != task['name']
-    assert task['name'] == TASK['name'] + "."
+    assert task['name'] == task_payload['name'] + "."
 
 
 def test_tasks_update__nonexistent_task__returns_404(client):
-    r = client.patch(f"/api/v1/tasks/1", json={'name': TASK['name']})
+    r = client.patch(f"/api/v1/tasks/1", json={'name': "Test Task"})
     assert r.status_code == 404, r.json()
+    assert "code" in r.json()
 
 
-def test_tasks_update__empty_payload__returns_200(client):
-    r = client.post("/api/v1/tasks", json=TASK)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-    
+def test_tasks_update__empty_payload__returns_200(client, existing_task):
+    created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={})
     assert r.status_code == 200, r.json()
 
 
-def test_tasks_update__priority_none__keeps_existing_priority(client):
-    r = client.post("/api/v1/tasks", json=TASK)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-    
+def test_tasks_update__priority_none__keeps_existing_priority(client, existing_task):
+    created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'priority': None})
     assert r.status_code == 200, r.json()
     assert r.json()['priority'] == created_task['priority']
 
 
-def test_tasks_update__priority_empty_string__returns_422(client):
-    r = client.post("/api/v1/tasks", json=TASK)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-    
+def test_tasks_update__priority_empty_string__returns_422(client, existing_task):
+    created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'priority': ""})
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_update__priority_invalid_value__returns_422(client):
-    r = client.post("/api/v1/tasks", json=TASK)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-    
+def test_tasks_update__priority_invalid_value__returns_422(client, existing_task):
+    created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'priority': "is minor"})
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_update__deadline_none__keeps_existing_deadline(client):
-    r = client.post("/api/v1/tasks", json=TASK)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-    
+def test_tasks_update__deadline_none__keeps_existing_deadline(client, existing_task):
+    created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'deadline': None})
     assert r.status_code == 200, r.json()
     assert r.json()['deadline'] == created_task['deadline']
 
 
-def test_tasks_update__deadline_invalid_value__returns_422(client):
-    r = client.post("/api/v1/tasks", json=TASK)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-    
+def test_tasks_update__deadline_invalid_value__returns_422(client, existing_task):
+    created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'deadline': "invalid-date"})
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_update__self_parent_assignment__returns_400(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_update__self_parent_assignment__returns_400(client, task_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
-
-    task_second = TASK.copy()
-
-    task_second['parent_id'] = created_task['id']
-    task_second['project_id'] = created_task['project_id'] + 1
     s_r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'parent_id': created_task['id']})
     assert s_r.status_code == 400, s_r.json()
 
 
-def test_tasks_update__nonexistent_parent_id__returns_400(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_update__nonexistent_parent_id__returns_400(client, task_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
     s_r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'parent_id': created_task['id'] + 1})
     assert s_r.status_code == 400, s_r.json()
+    assert s_r.json()["code"] == "reference_parent_task_not_found"
 
 
-def test_tasks_update__remove_parent__keeps_project_id_unchanged(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_update__remove_parent__keeps_project_id_unchanged(client, task_payload, task_second_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
-    task_second = TASK_SECOND.copy()
-
+    task_second = task_second_payload
     task_second['parent_id'] = created_task['id']
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 200, s_r.json()
@@ -312,13 +270,12 @@ def test_tasks_update__remove_parent__keeps_project_id_unchanged(client):
     assert s_r.json()['project_id'] == created_task['project_id']
 
 
-def test_tasks_update__set_parent_without_project_id__inherits_parent_project_id(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_update__set_parent_without_project_id__inherits_parent_project_id(client, task_payload, task_second_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
-    task_second = TASK_SECOND.copy()
-
+    task_second = task_second_payload
     task_second['parent_id'] = created_task['id']
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 200, s_r.json()
@@ -328,13 +285,12 @@ def test_tasks_update__set_parent_without_project_id__inherits_parent_project_id
     assert s_r.json()['project_id'] == created_task['project_id']
 
 
-def test_tasks_update__parent_with_different_project__returns_400(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_update__parent_with_different_project__returns_400(client, task_payload, task_second_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
-    task_second = TASK_SECOND.copy()
-
+    task_second = task_second_payload
     task_second['parent_id'] = created_task['id']
     task_second['project_id'] = created_task['project_id']
     s_r = client.post("/api/v1/tasks", json=task_second)
@@ -344,13 +300,12 @@ def test_tasks_update__parent_with_different_project__returns_400(client):
     assert s_r.status_code == 400, s_r.json()
 
 
-def test_tasks_update__direct_cycle_in_parent_chain__returns_400(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_update__direct_cycle_in_parent_chain__returns_400(client, task_payload, task_second_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
-    task_second = TASK_SECOND.copy()
-
+    task_second = task_second_payload
     task_second['parent_id'] = created_task['id']
     task_second['project_id'] = created_task['project_id']
     s_r = client.post("/api/v1/tasks", json=task_second)
@@ -360,20 +315,18 @@ def test_tasks_update__direct_cycle_in_parent_chain__returns_400(client):
     assert r.status_code == 400, r.json()
 
 
-def test_tasks_update__deep_cycle_in_parent_chain__returns_400(client):
-    r = client.post("/api/v1/tasks", json=TASK)
+def test_tasks_update__deep_cycle_in_parent_chain__returns_400(client, task_payload, task_second_payload, task_third_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
     assert r.status_code == 200, r.json()
     created_task = r.json()
 
-    task_second = TASK_SECOND.copy()
-
+    task_second = task_second_payload
     task_second['parent_id'] = created_task['id']
     task_second['project_id'] = created_task['project_id']
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 200, s_r.json()
 
-    task_third = TASK_THIRD.copy()
-
+    task_third = task_third_payload
     task_third['parent_id'] = s_r.json()['id']
     task_third['project_id'] = s_r.json()['project_id']
     s_r = client.post("/api/v1/tasks", json=task_third)
@@ -389,14 +342,14 @@ def test_tasks_list__no_tasks_exist__returns_empty_list(client):
     assert len(r.json()) == 0
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(10)], indirect=True)
 def test_tasks_list__second_page_without_remaining_items__returns_empty_list(client, create_task):
     r = client.get("/api/v1/tasks?page=2")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 0
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(30)], indirect=True)
 def test_tasks_list__thirty_tasks_page_three__returns_ten_items(client, create_task):
     r = client.get("/api/v1/tasks?page=3")
     assert r.status_code == 200, r.json()
@@ -406,14 +359,14 @@ def test_tasks_list__thirty_tasks_page_three__returns_ten_items(client, create_t
     assert present_ids == sorted(expected_ids)
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(30)], indirect=True)
 def test_tasks_list__thirty_tasks_page_four__returns_empty_list(client, create_task):
     r = client.get("/api/v1/tasks?page=4")
     assert r.status_code == 200, r.json()
     assert len(r.json()) == 0
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(10)], indirect=True)
 def test_tasks_list__limit_hundred_with_ten_tasks__returns_ten_items(client, create_task):
     r = client.get("/api/v1/tasks?limit=100")
     assert r.status_code == 200, r.json()
@@ -422,7 +375,7 @@ def test_tasks_list__limit_hundred_with_ten_tasks__returns_ten_items(client, cre
     present_ids = [task['id'] for task in r.json()]
     assert present_ids == sorted(expected_ids)
 
-@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(30)], indirect=True)
 def test_tasks_list__page_two_limit_five__returns_five_items(client, create_task):
     r = client.get("/api/v1/tasks?page=2&limit=5")
     assert r.status_code == 200, r.json()
@@ -432,7 +385,7 @@ def test_tasks_list__page_two_limit_five__returns_five_items(client, create_task
     assert present_ids == sorted(expected_ids)
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 30], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(30)], indirect=True)
 def test_tasks_list__page_three_limit_eleven__returns_eight_items(client, create_task):
     r = client.get("/api/v1/tasks?page=3&limit=11")
     assert r.status_code == 200, r.json()
@@ -509,14 +462,14 @@ def test_tasks_list__search_with_deadline_desc_sort__returns_matching_sorted_nam
     assert present_names == expected_names[:10]
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(10)], indirect=True)
 def test_tasks_delete__existing_task__returns_204(client, create_task):
     task = create_task[0]
     r = client.delete(f'/api/v1/tasks/{task['id']}')
     assert r.status_code == 204, r.json()
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(10)], indirect=True)
 def test_tasks_delete__already_deleted_task__returns_404(client, create_task):
     task = create_task[0]
     delete_r = client.delete(f'/api/v1/tasks/{task['id']}')
@@ -524,9 +477,10 @@ def test_tasks_delete__already_deleted_task__returns_404(client, create_task):
 
     r = client.delete(f'/api/v1/tasks/{task['id']}')
     assert r.status_code == 404, r.json()
+    assert r.json()["code"] == "task_not_found"
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(10)], indirect=True)
 def test_tasks_delete__parent_deleted_single_child__child_parent_becomes_none(client, create_task):
     task, task_second = create_task[0:2]
     r= client.patch(f'/api/v1/tasks/{task_second['id']}', json={'parent_id': task['id']})
@@ -541,7 +495,7 @@ def test_tasks_delete__parent_deleted_single_child__child_parent_becomes_none(cl
     assert r.json()['parent_id'] == None
 
 
-@pytest.mark.parametrize('create_task', [[TASK] * 10], indirect=True)
+@pytest.mark.parametrize('create_task', [_task_batch(10)], indirect=True)
 def test_tasks_delete__parent_deleted_two_children__children_parent_becomes_none(client, create_task):
     task, task_second, task_third = create_task[0:3]
     r= client.patch(f'/api/v1/tasks/{task_second['id']}', json={'parent_id': task['id']})
