@@ -19,7 +19,6 @@ def _task_batch(count: int) -> list[dict]:
         "content": "description",
         "deadline": "2026-03-20T00:00:00",
         "priority": "MAJOR",
-        "project_id": 1,
     } for _ in range(count)]
 
 
@@ -40,9 +39,7 @@ def test_tasks_get__existing_task__returns_task(client, existing_task, task_payl
     assert fetched_task['name'] == task_payload['name']
     assert fetched_task['content'] == task_payload['content']
     assert fetched_task['deadline'] == task_payload['deadline']
-    assert fetched_task['project_id'] == task_payload["project_id"]
     assert fetched_task['priority'].upper() == task_payload["priority"]
-    assert fetched_task['project_id'] == task_payload['project_id']
 
 
 def test_tasks_create__missing_name__returns_422(client, task_payload):
@@ -127,17 +124,13 @@ def test_tasks_create__nonexistent_parent_id__returns_400(client, task_second_pa
     assert s_r.status_code == 400, s_r.json()
     assert s_r.json()["code"] == "reference_parent_task_not_found"
 
-def test_tasks_create__parent_project_mismatch__returns_400(client, task_payload, task_second_payload):
-    r = client.post("/api/v1/tasks", json=task_payload)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
-    assert created_task['name'] == task_payload['name']
-    assert "id" in created_task
+def test_tasks_create__parent_project_mismatch__returns_400(client, task_with_project_assignment, task_second_payload):
+    task, project = task_with_project_assignment['task'], task_with_project_assignment['project']
 
     task_second = task_second_payload
 
-    task_second['parent_id'] = created_task['id']
-    task_second['project_id'] = created_task['project_id'] + 1
+    task_second['parent_id'] = task['id']
+    task_second['project_id'] = project['id'] + 1
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 400, s_r.json()
 
@@ -204,11 +197,10 @@ def test_tasks_update__empty_payload__returns_200(client, existing_task):
     assert r.status_code == 200, r.json()
 
 
-def test_tasks_update__priority_none__keeps_existing_priority(client, existing_task):
+def test_tasks_update__priority_none__returns_422(client, existing_task):
     created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'priority': None})
-    assert r.status_code == 200, r.json()
-    assert r.json()['priority'] == created_task['priority']
+    assert r.status_code == 422, r.json()
 
 
 def test_tasks_update__priority_empty_string__returns_422(client, existing_task):
@@ -223,11 +215,10 @@ def test_tasks_update__priority_invalid_value__returns_422(client, existing_task
     assert r.status_code == 422, r.json()
 
 
-def test_tasks_update__deadline_none__keeps_existing_deadline(client, existing_task):
+def test_tasks_update__deadline_none__returns_422(client, existing_task):
     created_task = existing_task
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'deadline': None})
-    assert r.status_code == 200, r.json()
-    assert r.json()['deadline'] == created_task['deadline']
+    assert r.status_code == 422, r.json()
 
 
 def test_tasks_update__deadline_invalid_value__returns_422(client, existing_task):
@@ -285,18 +276,16 @@ def test_tasks_update__set_parent_without_project_id__inherits_parent_project_id
     assert s_r.json()['project_id'] == created_task['project_id']
 
 
-def test_tasks_update__parent_with_different_project__returns_400(client, task_payload, task_second_payload):
-    r = client.post("/api/v1/tasks", json=task_payload)
-    assert r.status_code == 200, r.json()
-    created_task = r.json()
+def test_tasks_update__parent_with_different_project__returns_400(client, task_with_project_assignment, task_second_payload):
+    task = task_with_project_assignment['task']
 
     task_second = task_second_payload
-    task_second['parent_id'] = created_task['id']
-    task_second['project_id'] = created_task['project_id']
+    task_second['parent_id'] = task['id']
+    task_second['project_id'] = task['project_id']
     s_r = client.post("/api/v1/tasks", json=task_second)
     assert s_r.status_code == 200, s_r.json()
 
-    s_r = client.patch(f"/api/v1/tasks/{s_r.json()['id']}", json={'parent_id': created_task['project_id'] + 1})
+    s_r = client.patch(f"/api/v1/tasks/{s_r.json()['id']}", json={'parent_id': task['project_id'] + 1})
     assert s_r.status_code == 400, s_r.json()
 
 
@@ -516,3 +505,100 @@ def test_tasks_delete__parent_deleted_two_children__children_parent_becomes_none
     r = client.get(f"/api/v1/tasks/{task_third['id']}")
     assert r.status_code == 200, r.json()
     assert r.json()['parent_id'] == None
+
+def test_task_owner_assignment__owner_change_to_existing_membership__returns_200(client, task_with_project_assignment_and_member):
+    task_id = task_with_project_assignment_and_member['task']['id']
+    new_owner_id = task_with_project_assignment_and_member['user']['id']
+    r = client.patch(f"/api/v1/tasks/{task_id}", json={'owner_id': new_owner_id})
+    assert r.status_code == 200, r.json()
+    assert r.json()['owner_id'] == new_owner_id
+
+def test_task_owner_assignment__owner_change_to_existing_user_but_without_membership__returns_400(client, task_with_project_assignment, existing_user):
+    task_id = task_with_project_assignment['task']['id']
+    new_owner_id = existing_user['id']
+    r = client.patch(f"/api/v1/tasks/{task_id}", json={'owner_id': new_owner_id})
+    assert r.status_code == 400, r.json()
+    assert r.json()['code'] == "membership_not_found"
+
+def test_task_owner_assignment__owner_change_to_nonexistent_user__returns_400(client, task_with_project_assignment):
+    task = task_with_project_assignment['task']
+    r = client.patch(f"/api/v1/tasks/{task['id']}", json={'owner_id': 1})
+    assert r.status_code == 400, r.json()
+    assert r.json()['code'] == 'owner_not_found'
+
+def test_task_owner_assignment__project_change_to_nonexistent_project__returns_400(client, task_with_project_assignment):
+    task, project = task_with_project_assignment['task'], task_with_project_assignment['project']
+    r = client.patch(f"/api/v1/tasks/{task['id']}", json={'project_id': project['id'] + 1})
+    assert r.status_code == 400, r.json()
+    assert r.json()['code'] == 'project_not_found'
+
+def test_task_owner_assignment__owner_set_to_none__returns_200_and_owner_none(client, task_with_project_assignment):
+    task = task_with_project_assignment['task']
+    r = client.patch(f"/api/v1/tasks/{task['id']}", json={'owner_id': None})
+    assert r.status_code == 200, r.json()
+    assert r.json()['owner_id'] is None
+
+def test_task_owner_assignment__project_change_to_where_owner_is_not_member__returns_400(client, task_with_project_and_owner_assignment, existing_project_2):
+    task= task_with_project_and_owner_assignment['task']
+    r = client.patch(f"/api/v1/tasks/{task['id']}", json={'project_id': existing_project_2['id']})
+    assert r.status_code == 400, r.json()
+    assert r.json()['code'] == 'membership_not_found'
+
+def test_task_owner_assignment__owner_set_to_none_and_project_change__returns_200(client, task_with_project_and_owner_assignment, existing_project_2):
+    task = task_with_project_and_owner_assignment["task"]
+    new_project_id = existing_project_2["id"]
+    r = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"owner_id": None, "project_id": new_project_id},
+    )
+    assert r.status_code == 200, r.json()
+    body = r.json()
+    assert body["owner_id"] is None
+    assert body["project_id"] == new_project_id
+
+
+def test_task_owner_assignment__project_change_without_owner_in_payload__owner_not_member__returns_400(client, task_with_project_and_owner_assignment, existing_project_2):
+    task = task_with_project_and_owner_assignment["task"]
+    r = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        json={"project_id": existing_project_2["id"]},
+    )
+    assert r.status_code == 400, r.json()
+    assert r.json()["code"] == "membership_not_found"
+
+
+def test_task_owner_assignment__create_task_owner_without_membership__returns_400(client, existing_project, existing_user, task_payload):
+    payload = dict(task_payload)
+    payload["project_id"] = existing_project["id"]
+    payload["owner_id"] = existing_user["id"]
+    r = client.post("/api/v1/tasks", json=payload)
+    assert r.status_code == 400, r.json()
+    assert r.json()["code"] == "membership_not_found"
+
+def test_task_owner_assignment__create_task_nonexistent_owner__returns_400(client, existing_project, task_payload):
+    payload = dict(task_payload)
+    payload["project_id"] = existing_project["id"]
+    payload["owner_id"] = 999_999
+    r = client.post("/api/v1/tasks", json=payload)
+    assert r.status_code == 400, r.json()
+    assert r.json()["code"] in {"owner_not_found", "user_not_found"}
+
+def test_task_owner_assignment__create_task_without_project_and_existing_owner__returns_200(client, existing_user, task_payload):
+    payload = dict(task_payload)
+    payload["owner_id"] = existing_user["id"]
+    r = client.post("/api/v1/tasks", json=payload)
+    assert r.status_code == 200, r.json()
+    assert r.json()["owner_id"] == existing_user["id"]
+    assert r.json()["project_id"] is None
+
+def test_task_owner_assignment__create_task_without_project_and_nonexistent_owner__returns_400(client, task_payload):
+    payload = dict(task_payload)
+    payload["owner_id"] = 999_999
+    r = client.post("/api/v1/tasks", json=payload)
+    assert r.status_code == 400, r.json()
+    assert r.json()["code"] in {"owner_not_found", "user_not_found"}
+
+def test_task_owner_assignment__task_with_project_fixture__returns_consistent_project_id(task_with_project_assignment):
+    task = task_with_project_assignment["task"]
+    project = task_with_project_assignment["project"]
+    assert task["project_id"] == project["id"]

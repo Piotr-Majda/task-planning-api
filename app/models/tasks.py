@@ -1,5 +1,5 @@
 from typing import Optional, Annotated
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field, model_validator
 from datetime import datetime
 from app.domain.enums import TaskPriority, TaskStatus
 from app.domain.constants import CONTENT_MAX_LEN, NAME_MAX_LEN
@@ -35,6 +35,7 @@ class TaskCreate(BaseModel):
     deadline: Annotated[datetime, BeforeValidator(ensure_deadline_format)]
     project_id: Optional[int] = None
     parent_id: Optional[int] = None
+    owner_id: Optional[int] = None
 
 
 class TaskUpdate(BaseModel):
@@ -44,6 +45,15 @@ class TaskUpdate(BaseModel):
     deadline: Annotated[Optional[datetime], BeforeValidator(ensure_deadline_format)] = None
     project_id: Optional[int] = None
     parent_id: Optional[int] = None
+    owner_id: Optional[int] = None
+
+    @model_validator(mode="after")
+    def validate_no_explicit_nulls(self):
+        if "priority" in self.model_fields_set and self.priority is None:
+            raise ValueError("priority cannot be null; omit field to keep unchanged")
+        if "deadline" in self.model_fields_set and self.deadline is None:
+            raise ValueError("deadline cannot be null; omit field to keep unchanged")
+        return self
 
 
 class TaskRead(BaseModel):
@@ -55,5 +65,6 @@ class TaskRead(BaseModel):
     deadline: datetime
     project_id: Optional[int] = None
     parent_id: Optional[int] = None
+    owner_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime

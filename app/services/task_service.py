@@ -2,14 +2,16 @@ from typing import List, Optional
 
 from app.db.schema import Task, TaskStatus
 from app.domain.enums import OrderBy, SortBy
+from app.domain.policy import ProjectAssignmentPolicy
 from app.exceptions.task_exceptions import CycleDetected, ParentSelfAssignmentDetected, ProjectMismatch, TaskNotFound
 from app.models.tasks import TaskCreate, TaskUpdate
 from app.repository.task_repository import TaskRepository
 
 
 class TaskService:
-    def __init__(self, task_repo: TaskRepository) -> None:
+    def __init__(self, task_repo: TaskRepository, project_assignment_policy: ProjectAssignmentPolicy) -> None:
         self._repo = task_repo
+        self._project_assignment_policy = project_assignment_policy
 
     # ════════════════════════════════════════════════════════════
     # CRUD
@@ -33,12 +35,21 @@ class TaskService:
 
     def create_task(self, task_create: TaskCreate) -> Task:
         params = task_create.model_dump(exclude_unset=True)
+        owner_id = params.get("owner_id")
+        project_id = params.get("project_id")
+        self._project_assignment_policy.validate_owner_assignment(
+            owner_id=owner_id,
+            project_id=project_id,
+        )
         task = Task(**params, status=TaskStatus.TODO)
         return self._repo.create(task)
     
     def update_task(self, task_id: int, params: TaskUpdate) -> Task:
         task = self.get_task(task_id)
-        update_params = params.model_dump(exclude_none=True)
+        update_params = params.model_dump(exclude_unset=True)
+        project_id = update_params.get('project_id') if 'project_id' in update_params.keys() else task.project_id
+        owner_id = update_params.get('owner_id') if 'owner_id' in update_params.keys() else task.owner_id
+        self._project_assignment_policy.validate_owner_assignment(owner_id=owner_id, project_id=project_id)
         for name, value in update_params.items():
             setattr(task, name, value)
         
@@ -56,10 +67,10 @@ class TaskService:
 
     def validate_self_parent_assignment(self, parent_id: int , task_id: int):
         """
-        Validate that parent id is not same as task id to not introduse confusion
+        Validate that parent id is not same as task id.
         
         Rules:
-        - Task cannot be self assignemt as parent
+        - Task cannot be assigned as its own parent
         
         Raises:
             ParentSelfAssignmentDetected: if parent and task has same id

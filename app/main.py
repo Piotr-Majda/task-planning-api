@@ -3,6 +3,7 @@ import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import iterate_in_threadpool
 from app.core.config import config
 from app.core.logging import setup_logging
 from app.db.session import engine
@@ -72,5 +73,11 @@ async def handle_logging(request: Request, call_next):
     process_time = time.perf_counter() - start_time
     response.headers["X-Process-Time"] = str(process_time)
     status_code = response.status_code
+    res_body = [section async for section in response.body_iterator]
+    response.body_iterator = iterate_in_threadpool(iter(res_body))
+
     logger.info(f"Response: {method} {url} returned {status_code} to {client_ip}")
+    if res_body:
+        res_body = res_body[0].decode()
+        logger.info(f"Response body: \n{res_body}")
     return response

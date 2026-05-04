@@ -7,7 +7,6 @@ def _task_payload(idx: int) -> dict:
         "content": "description",
         "deadline": "2026-03-20T00:00:00",
         "priority": "MAJOR",
-        "project_id": 1,
     }
 
 

@@ -62,7 +62,7 @@ def update_user(user_id: int, params: UserUpdate, service: user_service_dep):
     """
     Status codes:
     - 404: user_id resource not found
-    - 200: user updated succesful
+    - 200: user updated successful
     """
     # Valid task exist
     try:

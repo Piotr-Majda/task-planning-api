@@ -36,6 +36,11 @@ class Task(Base):
         back_populates='tasks'
     )
     deadline: Mapped[datetime] = mapped_column(nullable=False)
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey('users.id'), nullable=True)
+    owner: Mapped["User"] = relationship(
+        "User", 
+        back_populates='tasks'
+    )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
@@ -63,7 +68,11 @@ class User(Base):
     name: Mapped[NameAttr]
     projects: Mapped[List["Project"]] = relationship(
         'Project', 
-        back_populates='owner'
+        back_populates="owner"
+    )
+    tasks: Mapped[List["Task"]] = relationship(
+        "Task",
+        back_populates="owner"
     )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())

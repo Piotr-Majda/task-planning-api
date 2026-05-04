@@ -56,7 +56,7 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     - 400: self-parent assignment
     - 400: cycle detected
     - 400: project mismatch
-    - 200: task updated succesful
+    - 200: task updated successful
     """
     # Valid task exist
     try:

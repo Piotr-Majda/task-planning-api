@@ -23,7 +23,6 @@ def task_payload() -> dict:
         "content": "description",
         "deadline": "2026-03-20T00:00:00",
         "priority": "MAJOR",
-        "project_id": 1,
     }
 
 
@@ -103,6 +102,13 @@ def existing_project(client, project_payload):
 
 
 @pytest.fixture(scope='function')
+def existing_project_2(client, project_payload):
+    r = client.post("/api/v1/projects", json=project_payload)
+    assert r.status_code == 200, r.json()
+    return r.json()
+
+
+@pytest.fixture(scope='function')
 def existing_user(client, user_payload):
     r = client.post("/api/v1/users", json=user_payload)
     assert r.status_code == 200, r.json()
@@ -123,4 +129,51 @@ def project_with_member(existing_project, existing_user, create_project_member):
         "project": existing_project,
         "user": existing_user,
         "membership": membership,
+    }
+
+@pytest.fixture()
+def assign_task_to_project(client):
+    def assign(task_id: int, project_id: int):
+        r = client.patch(f"/api/v1/tasks/{task_id}", json={'project_id': project_id})
+        assert r.status_code == 200, r.json()
+        return r.json()
+    return assign
+
+
+@pytest.fixture()
+def task_with_project_assignment(existing_project, existing_task, assign_task_to_project):
+    task = assign_task_to_project(existing_task["id"], existing_project['id'])
+    return {
+        "project": existing_project,
+        "task": task,
+    }
+
+@pytest.fixture(scope='function')
+def task_with_project_assignment_and_member(project_with_member, existing_task, assign_task_to_project):
+    task = assign_task_to_project(existing_task["id"], project_with_member["project"]['id'])
+    return {
+        "project": project_with_member['project'],
+        "user": project_with_member['user'],
+        "task": task,
+    }
+
+@pytest.fixture()
+def assign_owner_to_task(client):
+    def assign(user_id: int, task_id: int):
+        r = client.patch(f"/api/v1/tasks/{task_id}", json={'owner_id': user_id})
+        assert r.status_code == 200, r.json()
+        return r.json()
+    return assign
+
+@pytest.fixture(scope='function')
+def task_with_project_and_owner_assignment(task_with_project_assignment_and_member, assign_owner_to_task):
+    task = task_with_project_assignment_and_member['task']
+    user = task_with_project_assignment_and_member['user']
+    project = task_with_project_assignment_and_member['project']
+
+    task = assign_owner_to_task(user_id=user['id'], task_id=task["id"])
+    return {
+        "project": project,
+        "user": user,
+        "task": task,
     }

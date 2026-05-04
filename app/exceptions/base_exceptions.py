@@ -1,9 +1,9 @@
 import re
 
-patter = re.compile(r"(?<!^)(?=[A-Z])")
+pattern = re.compile(r"(?<!^)(?=[A-Z])")
 
 def _camel_to_snake(value: str) -> str:
-    return patter.sub("_", value).lower()
+    return pattern.sub("_", value).lower()
 
 
 class BusinessException(Exception):

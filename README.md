@@ -39,7 +39,7 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
   - deadline
   - priority
   - content
-  - owner (`owner_id`) - Not implemented yet
+  - owner (`owner_id`)
 
 ### Project
 - Has an owner (User)
@@ -61,8 +61,8 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - User can list tasks by parent - Not implemented yet  
 - User can assign an owner to project (`owner_id`)
 - User can remove project owner (`owner_id = null`)
-- User can assign an owner to task (`owner_id`) - Not implemented yet
-- User can remove task owner (`owner_id = null`) - Not implemented yet
+- User can assign an owner to task (`owner_id`)
+- User can remove task owner (`owner_id = null`)
 - User can add project members
 - User can remove project members
 
@@ -82,7 +82,10 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - Project member can be added only when both project and user exist
 - Duplicate project membership is rejected (`409 Conflict`)
 - Membership removal is strict and returns `404` when project or membership does not exist
-- Task owner assignment should follow the same rule as project owner - Not implemented yet
+- Task owner assignment rule:
+  - when task has `project_id`, owner must exist and be a member of this project
+  - when task has no `project_id`, any existing user can be assigned as owner
+- Task update request does not accept explicit `null` for `priority` and `deadline`; omit fields to keep values unchanged
 
 ---
 
@@ -121,7 +124,7 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
   "owner_id": "int | null"
 }
 ```
-`owner_id` for task is planned and currently not implemented.
+`owner_id` for task is implemented and validated by project assignment rules.
 
 #### ProjectMember
 ```json
@@ -135,7 +138,7 @@ Constraint: (`user_id`, `project_id`) must be unique.
 ### Relationships
 - User ↔ Project (many-to-many via `ProjectMember`)
 - User → Project (owner)
-- User → Task (owner) - Not implemented yet
+- User → Task (owner)
 - Project → Task (one-to-many)
 - Task → Task (self-relation, parent → children)
 
@@ -156,7 +159,7 @@ Constraint: (`user_id`, `project_id`) must be unique.
   "owner_id": 1
 }
 ```
-`owner_id` in task payload is planned and currently not implemented.
+`owner_id` in create payload is supported.
 
 #### Get Task
 `GET /tasks/{id}`
@@ -179,7 +182,7 @@ Constraint: (`user_id`, `project_id`) must be unique.
   "owner_id": 1
 }
 ```
-Task owner update is planned and currently not implemented.
+Task owner update is supported.
 
 #### Delete Task
 `DELETE /tasks/{id}`
@@ -289,14 +292,14 @@ Guidelines:
 - Implemented: Add project member endpoint with duplicate-membership validation.
 - Implemented: Get project members endpoint.
 - Implemented: Remove project member endpoint with strict not-found validation.
-- Planned: Task owner assignment and owner cleanup on user deletion.
+- Implemented: Task owner assignment with project membership validation.
 - Planned: Additional task filters (`status`, `project_id`) and list-by-parent endpoint.
 
 ## Missing / Things To Consider Next
 
 - Authorization rules: who can update/delete project or task.
 - Membership policy: should project owner be required to be a member.
-- Task assignment policy: any user vs only project members.
+- Task owner assignment without project allows any existing user.
 - Deployment readiness for cloud: env configuration, migration strategy, health checks, and logging/monitoring.
 
 
