@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 from app.api.v1.dependencies import task_service_dep, _http_error
 from app.exceptions.task_exceptions import TaskNotFound
 from app.models.common import SearchQueryParams
@@ -28,23 +28,7 @@ def get_task(task_id: int, service: task_service_dep):
         raise _http_error(status_code=404, code=e.code, detail=e.message)
 
 @router.post('/', response_model=TaskRead)
-def create_task(params: TaskCreate, service: task_service_dep):
-    parent_id = params.parent_id
-    
-    if parent_id:
-        try:
-            parent_task = service.get_task(parent_id)
-        except TaskNotFound as e:
-            raise _http_error(status_code=400, code="reference_parent_task_not_found", detail=e.message)
-        service.validate_project_consistency(
-            parent_project_id=parent_task.project_id, 
-            task_project_id=params.project_id
-            )
-        params.project_id = service.resolve_project_id(
-            parent_project_id=parent_task.project_id, 
-            task_project_id=params.project_id
-            )
-    
+def create_task(params: TaskCreate, service: task_service_dep):    
     return service.create_task(params)
 
 @router.patch("/{task_id}", response_model=TaskRead)
@@ -58,41 +42,13 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     - 400: project mismatch
     - 200: task updated successful
     """
-    # Valid task exist
     try:
-        task = service.get_task(task_id)
+        return service.update_task(
+            task_id=task_id,
+            params=params
+            )
     except TaskNotFound as e:
         raise _http_error(status_code=404, code=e.code, detail=e.message)
-    
-    parent_id = params.parent_id
-    
-    if parent_id:
-        service.validate_self_parent_assignment(
-            parent_id=parent_id, 
-            task_id=task_id
-            )
-
-        try:
-            parent_task = service.get_task(parent_id)
-        except TaskNotFound as e:
-            raise _http_error(status_code=400, code="reference_parent_task_not_found", detail=e.message)
-        service.validate_project_consistency(
-            parent_project_id=parent_task.project_id, 
-            task_project_id=params.project_id
-            )
-        params.project_id = service.resolve_project_id(
-            parent_project_id=parent_task.project_id, 
-            task_project_id=params.project_id
-            )
-        service.validate_no_cycle(
-            task_id=task_id, 
-            parent_id=parent_id
-            )
-
-    return service.update_task(
-        task_id=task_id,
-        params=params
-        )
 
 @router.delete('/{task_id}', status_code=204)
 def delete_task(task_id: int, service: task_service_dep):

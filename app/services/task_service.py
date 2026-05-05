@@ -1,11 +1,20 @@
-from typing import List, Optional
+import copy
+from typing import List, Optional, Protocol, TypeVar
 
 from app.db.schema import Task, TaskStatus
 from app.domain.enums import OrderBy, SortBy
 from app.domain.policy import ProjectAssignmentPolicy
-from app.exceptions.task_exceptions import CycleDetected, ParentSelfAssignmentDetected, ProjectMismatch, TaskNotFound
+from app.exceptions.task_exceptions import CycleDetected, ParentSelfAssignmentDetected, ProjectMismatch, ReferenceParentTaskNotFound, TaskNotFound
 from app.models.tasks import TaskCreate, TaskUpdate
 from app.repository.task_repository import TaskRepository
+
+
+class ParentLinkParams(Protocol):
+    parent_id: int | None
+    project_id: int | None
+
+
+P = TypeVar("P", bound=ParentLinkParams)
 
 
 class TaskService:
@@ -33,22 +42,30 @@ class TaskService:
             raise TaskNotFound(id=task_id)
         return task
 
-    def create_task(self, task_create: TaskCreate) -> Task:
-        params = task_create.model_dump(exclude_unset=True)
-        owner_id = params.get("owner_id")
-        project_id = params.get("project_id")
+    def create_task(self, params: TaskCreate) -> Task:
+
+        if params.parent_id is not None:
+            params = self.validate_and_prepare_parent_link(params)
+
+        create_params = params.model_dump(exclude_unset=True)
+        owner_id = create_params.get("owner_id")
+        project_id = create_params.get("project_id")
         self._project_assignment_policy.validate_owner_assignment(
             owner_id=owner_id,
             project_id=project_id,
         )
-        task = Task(**params, status=TaskStatus.TODO)
+        task = Task(**create_params, status=TaskStatus.TODO)
         return self._repo.create(task)
     
     def update_task(self, task_id: int, params: TaskUpdate) -> Task:
         task = self.get_task(task_id)
+
+        if params.parent_id is not None:
+            params = self.validate_and_prepare_parent_link(params, task_id)
+            
         update_params = params.model_dump(exclude_unset=True)
-        project_id = update_params.get('project_id') if 'project_id' in update_params.keys() else task.project_id
-        owner_id = update_params.get('owner_id') if 'owner_id' in update_params.keys() else task.owner_id
+        project_id = update_params.get('project_id') if 'project_id' in update_params else task.project_id
+        owner_id = update_params.get('owner_id') if 'owner_id' in update_params else task.owner_id
         self._project_assignment_policy.validate_owner_assignment(owner_id=owner_id, project_id=project_id)
         for name, value in update_params.items():
             setattr(task, name, value)
@@ -61,9 +78,40 @@ class TaskService:
             raise TaskNotFound(id=task_id)
         self._repo.delete(task)
 
+    def get_task_as_parent(self, task_id: int) -> Task:
+        try:
+            return self.get_task(task_id)
+        except TaskNotFound:
+            raise ReferenceParentTaskNotFound(task_id)
+
     # ════════════════════════════════════════════════════════════
     # VALIDATORS
     # ════════════════════════════════════════════════════════════
+
+    def validate_and_prepare_parent_link(self, params: P, task_id: Optional[int] = None) -> P:
+        parent_id = params.parent_id
+        if parent_id is not None:
+            params = copy.deepcopy(params)
+        
+            parent_task = self.get_task_as_parent(parent_id)
+            self.validate_project_consistency(
+                parent_project_id=parent_task.project_id, 
+                task_project_id=params.project_id
+                )
+            params.project_id = self.resolve_project_id(
+                parent_project_id=parent_task.project_id, 
+                task_project_id=params.project_id
+                )
+            if task_id is not None:
+                self.validate_self_parent_assignment(
+                    parent_id=parent_id, 
+                    task_id=task_id
+                    )
+                self.validate_no_cycle(
+                    task_id=task_id,
+                    parent_id=parent_id
+                )
+        return params
 
     def validate_self_parent_assignment(self, parent_id: int , task_id: int):
         """
