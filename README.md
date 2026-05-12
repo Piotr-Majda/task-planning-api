@@ -53,7 +53,9 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - User can create a task  
 - User can assign or change a parent task  
 - User can change task status (`todo`, `in_progress`, `done`)  
-  - Only if all subtasks are `done` - Not implemented yet  
+  - Parent task can be changed to `done` only when all direct child tasks are `done`
+  - A `done` parent task can be reopened to `todo` or `in_progress`
+  - After reopening a parent task, child task statuses can be changed again
 - User can view task hierarchy  
 - User can delete a task  
   - Children tasks will have `parent_id = null`  
@@ -85,7 +87,12 @@ The system enables users to manage tasks in a hierarchical (tree-based) structur
 - Task owner assignment rule:
   - when task has `project_id`, owner must exist and be a member of this project
   - when task has no `project_id`, any existing user can be assigned as owner
-- Task update request does not accept explicit `null` for `priority` and `deadline`; omit fields to keep values unchanged
+- Task status rules:
+  - a parent task cannot be changed to `done` while any direct child task is not `done`
+  - a task with status `done` cannot receive new child tasks
+  - a child task under a `done` parent cannot be changed back to `todo` or `in_progress`
+  - a `done` parent can be reopened to `todo` or `in_progress`; after reopening, children can change status again
+- Task update request does not accept explicit `null` for `priority`, `deadline`, or `status`; omit fields to keep values unchanged
 
 ---
 
@@ -161,6 +168,10 @@ Constraint: (`user_id`, `project_id`) must be unique.
 ```
 `owner_id` in create payload is supported.
 
+Rules:
+- `parent_id` must reference an existing task.
+- Creating a child task under a `done` parent is rejected because new tasks start as `todo`.
+
 #### Get Task
 `GET /tasks/{id}`
 
@@ -183,6 +194,13 @@ Constraint: (`user_id`, `project_id`) must be unique.
 }
 ```
 Task owner update is supported.
+
+Rules:
+- Changing `parent_id` to a `done` parent is rejected.
+- Changing a parent task to `done` is allowed only when all direct child tasks are already `done`.
+- Changing a `done` parent back to `todo` or `in_progress` is allowed.
+- Changing a child task under a `done` parent back to `todo` or `in_progress` is rejected.
+- Send `status`, `priority`, and `deadline` only when changing them; explicit `null` is rejected.
 
 #### Delete Task
 `DELETE /tasks/{id}`

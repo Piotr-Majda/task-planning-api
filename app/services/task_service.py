@@ -4,7 +4,7 @@ from typing import List, Optional, Protocol, TypeVar
 from app.db.schema import Task, TaskStatus
 from app.domain.enums import OrderBy, SortBy
 from app.domain.policy import ProjectAssignmentPolicy
-from app.exceptions.task_exceptions import CycleDetected, ParentSelfAssignmentDetected, ProjectMismatch, ReferenceParentTaskNotFound, TaskNotFound
+from app.exceptions.task_exceptions import ChangeFinishedTaskStatusNotAllowed, ChildTaskNotDone, CycleDetected, NewSubtaskNotAllowed, ParentSelfAssignmentDetected, ProjectMismatch, ReferenceParentTaskNotFound, TaskNotFound
 from app.models.tasks import TaskCreate, TaskUpdate
 from app.repository.task_repository import TaskRepository
 
@@ -46,6 +46,7 @@ class TaskService:
 
         if params.parent_id is not None:
             params = self.validate_and_prepare_parent_link(params)
+        self.validate_if_parent_can_have_new_subtask(params)
 
         create_params = params.model_dump(exclude_unset=True)
         owner_id = create_params.get("owner_id")
@@ -62,7 +63,8 @@ class TaskService:
 
         if params.parent_id is not None:
             params = self.validate_and_prepare_parent_link(params, task_id)
-            
+        self.validate_if_parent_can_have_new_subtask(params)
+        self.validate_status_change(params, task_id)
         update_params = params.model_dump(exclude_unset=True)
         project_id = update_params.get('project_id') if 'project_id' in update_params else task.project_id
         owner_id = update_params.get('owner_id') if 'owner_id' in update_params else task.owner_id
@@ -87,6 +89,23 @@ class TaskService:
     # ════════════════════════════════════════════════════════════
     # VALIDATORS
     # ════════════════════════════════════════════════════════════
+
+    def validate_if_parent_can_have_new_subtask(self, params: ParentLinkParams) -> None:
+        if params.parent_id is not None:
+            parent = self.get_task_as_parent(params.parent_id)
+            if parent.status == TaskStatus.DONE:
+                raise NewSubtaskNotAllowed(parent_id=parent.id)
+
+    def validate_status_change(self, params: TaskUpdate, task_id: int) -> None:
+        task = self.get_task(task_id)
+        if params.status == TaskStatus.DONE:
+            if any(TaskStatus.DONE != child.status for child in task.children):
+                raise ChildTaskNotDone(task_id)
+        if params.status in {TaskStatus.IN_PROGRESS, TaskStatus.TODO}:
+            if params.parent_id is not None:
+                return
+            if task.parent is not None and task.parent.status == TaskStatus.DONE:
+                raise ChangeFinishedTaskStatusNotAllowed(id=task_id, parent_id=task.parent.id)
 
     def validate_and_prepare_parent_link(self, params: P, task_id: Optional[int] = None) -> P:
         parent_id = params.parent_id

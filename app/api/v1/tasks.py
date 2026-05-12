@@ -28,7 +28,20 @@ def get_task(task_id: int, service: task_service_dep):
         raise _http_error(status_code=404, code=e.code, detail=e.message)
 
 @router.post('/', response_model=TaskRead)
-def create_task(params: TaskCreate, service: task_service_dep):    
+def create_task(params: TaskCreate, service: task_service_dep):
+    """
+    Create task.
+
+    Behavior:
+    - New tasks start with status `todo`
+    - If `parent_id` is provided, parent task must exist
+    - Cannot create a new child task under a parent with status `done`
+
+    Status codes:
+    - 200: task created
+    - 400: parent_id reference not found
+    - 400: parent task is already done
+    """
     return service.create_task(params)
 
 @router.patch("/{task_id}", response_model=TaskRead)
@@ -40,7 +53,15 @@ def update_task(task_id: int, params: TaskUpdate, service: task_service_dep):
     - 400: self-parent assignment
     - 400: cycle detected
     - 400: project mismatch
+    - 400: parent task cannot be marked done while any child is not done
+    - 400: done parent cannot receive a new child task
+    - 400: child under done parent cannot be changed back to todo or in_progress
     - 200: task updated successful
+
+    Status behavior:
+    - Parent task can be changed to `done` only when all direct children are `done`
+    - Done parent can be reopened to `todo` or `in_progress`
+    - After reopening parent, child task statuses can be changed again
     """
     try:
         return service.update_task(

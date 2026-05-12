@@ -121,6 +121,67 @@ def existing_task(client, task_payload):
     assert r.status_code == 200, r.json()
     return r.json()
 
+@pytest.fixture(scope='function')
+def existing_task_status_done(client, existing_task):
+    r = client.patch(f"/api/v1/tasks/{existing_task['id']}", json={'status': 'done'})
+    assert r.status_code == 200, r.json()
+    assert r.json()['status'] == 'done'
+    return r.json()
+
+@pytest.fixture(scope='function')
+def existing_task_second(client, task_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
+    assert r.status_code == 200, r.json()
+    return r.json()
+
+@pytest.fixture(scope='function')
+def existing_child_task(client, existing_task, task_payload):
+    r = client.post("/api/v1/tasks", json=task_payload)
+    assert r.status_code == 200, r.json()
+    child_task = r.json()
+    r = client.patch(f"/api/v1/tasks/{child_task['id']}", json={'parent_id': existing_task['id']})
+    assert r.status_code == 200, r.json()
+    return r.json()
+
+@pytest.fixture(scope='function')
+def existing_second_child_task(client, existing_task, task_second_payload):
+    r = client.post("/api/v1/tasks", json=task_second_payload)
+    assert r.status_code == 200, r.json()
+    child_task = r.json()
+    r = client.patch(f"/api/v1/tasks/{child_task['id']}", json={'parent_id': existing_task['id']})
+    assert r.status_code == 200, r.json()
+    return r.json()
+
+@pytest.fixture(scope='function')
+def existing_child_task_status_in_progress(client, existing_child_task):
+    r = client.patch(f"/api/v1/tasks/{existing_child_task['id']}", json={'status': 'in_progress'})
+    assert r.status_code == 200, r.json()
+    assert r.json()['status'] == 'in_progress'
+    return r.json()
+
+@pytest.fixture(scope='function')
+def existing_child_task_status_done(client, existing_child_task):
+    r = client.patch(f"/api/v1/tasks/{existing_child_task['id']}", json={'status': 'done'})
+    assert r.status_code == 200, r.json()
+    assert r.json()['status'] == 'done'
+    return r.json()
+
+@pytest.fixture(scope='function')
+def existing_second_child_task_status_in_progress(client, existing_second_child_task):
+    r = client.patch(f"/api/v1/tasks/{existing_second_child_task['id']}", json={'status': 'in_progress'})
+    assert r.status_code == 200, r.json()
+    assert r.json()['status'] == 'in_progress'
+    return r.json()
+
+@pytest.fixture(scope='function')
+def done_parent_with_done_child(client, existing_task, existing_child_task_status_done):
+    r = client.patch(f"/api/v1/tasks/{existing_task['id']}", json={'status': 'done'})
+    assert r.status_code == 200, r.json()
+    assert r.json()['status'] == 'done'
+    return {
+        "parent": r.json(),
+        "child": existing_child_task_status_done,
+    }
 
 @pytest.fixture(scope='function')
 def project_with_member(existing_project, existing_user, create_project_member):

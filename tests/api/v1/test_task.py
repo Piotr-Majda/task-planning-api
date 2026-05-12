@@ -324,6 +324,55 @@ def test_tasks_update__deep_cycle_in_parent_chain__returns_400(client, task_payl
     r = client.patch(f"/api/v1/tasks/{created_task['id']}", json={'parent_id': s_r.json()['id']})
     assert r.status_code == 400, r.json()
 
+def test_tasks_update__leaf_task_status_change_to_done__returns_200(client, existing_task):
+    task_id = existing_task['id']
+    r = client.patch(f"/api/v1/tasks/{task_id}", json={'status': 'done'})
+    assert r.status_code == 200
+    returned_task = r.json()
+    assert returned_task['status'] == 'done'
+
+def test_tasks_update__parent_with_todo_child_status_change_to_done__returns_400(client, existing_task, existing_child_task):
+    task_id = existing_task['id']
+    r = client.patch(f"/api/v1/tasks/{task_id}", json={'status': 'done'})
+    assert r.status_code == 400
+    assert r.json()['code'] == 'child_task_not_done'
+
+def test_tasks_update__parent_with_all_children_done_status_change_to_done__returns_200(client, existing_task, existing_child_task_status_done):
+    task_id = existing_task['id']
+    r = client.patch(f"/api/v1/tasks/{task_id}", json={'status': 'done'})
+    assert r.status_code == 200
+    assert r.json()['status'] == 'done'
+
+def test_tasks_update__parent_with_one_unfinished_child_status_change_to_done__returns_400(client, existing_task, existing_child_task_status_done, existing_second_child_task_status_in_progress):
+    task_id = existing_task['id']
+    r = client.patch(f"/api/v1/tasks/{task_id}", json={'status': 'done'})
+    assert r.status_code == 400
+    assert r.json()['code'] == 'child_task_not_done'
+
+def test_tasks_update__parent_status_change_to_in_progress_with_todo_child__returns_200(client, existing_task, existing_child_task):
+    task_id = existing_task['id']
+    r = client.patch(f"/api/v1/tasks/{task_id}", json={'status': 'in_progress'})
+    assert r.status_code == 200
+    assert r.json()['status'] == 'in_progress'
+
+def test_tasks_create__todo_child_with_done_parent__returns_400(client, existing_task_status_done, task_payload):
+    payload = dict(task_payload)
+    payload['parent_id'] = existing_task_status_done['id']
+
+    r = client.post("/api/v1/tasks", json=payload)
+    assert r.status_code == 400
+    assert r.json()['code'] == 'new_subtask_not_allowed'
+
+def test_tasks_update__todo_task_parent_change_to_done_parent__returns_400(client, existing_task_status_done, existing_task_second):
+    r = client.patch(f'/api/v1/tasks/{existing_task_second['id']}', json={'parent_id': existing_task_status_done['id']})
+    assert r.status_code == 400
+    assert r.json()['code'] == 'new_subtask_not_allowed'
+
+def test_tasks_update__done_child_with_done_parent_status_change_to_in_progress__returns_400(client, done_parent_with_done_child):
+    child = done_parent_with_done_child["child"]
+    r = client.patch(f"/api/v1/tasks/{child['id']}", json={'status': 'in_progress'})
+    assert r.status_code == 400
+    assert r.json()['code'] == 'change_finished_task_status_not_allowed'
 
 def test_tasks_list__no_tasks_exist__returns_empty_list(client):
     r = client.get("/api/v1/tasks")

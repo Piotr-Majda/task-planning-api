@@ -40,3 +40,24 @@ class CycleDetected(TaskException):
     def __init__(self, task_id: int, parent_id: int) -> None:
         message = self.MESSAGE.format(task_id, parent_id)
         super().__init__(message)
+
+
+class ChildTaskNotDone(TaskException):
+    MESSAGE = "One of the child tasks is not done. Cannot mark task id='{0}' as done"
+    def __init__(self, id: int) -> None:
+        message = self.MESSAGE.format(id)
+        super().__init__(message)
+
+
+class NewSubtaskNotAllowed(TaskException):
+    MESSAGE = "New subtask for task id='{0}' is not allowed because task status is done"
+    def __init__(self, parent_id: int) -> None:
+        message = self.MESSAGE.format(parent_id)
+        super().__init__(message)
+
+
+class ChangeFinishedTaskStatusNotAllowed(TaskException):
+    MESSAGE = "Changing task id='{0}' status is not allowed because parent id='{1}' is done"
+    def __init__(self, id: int, parent_id: int) -> None:
+        message = self.MESSAGE.format(id, parent_id)
+        super().__init__(message)
