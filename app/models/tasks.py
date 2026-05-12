@@ -46,6 +46,7 @@ class TaskUpdate(BaseModel):
     project_id: Optional[int] = None
     parent_id: Optional[int] = None
     owner_id: Optional[int] = None
+    status: Optional[TaskStatus] = None
 
     @model_validator(mode="after")
     def validate_no_explicit_nulls(self):
@@ -53,6 +54,8 @@ class TaskUpdate(BaseModel):
             raise ValueError("priority cannot be null; omit field to keep unchanged")
         if "deadline" in self.model_fields_set and self.deadline is None:
             raise ValueError("deadline cannot be null; omit field to keep unchanged")
+        if "status" in self.model_fields_set and self.status is None:
+            raise ValueError("status cannot be null; omit field to keep unchanged")
         return self
 
 
