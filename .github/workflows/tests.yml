@@ -21,4 +21,4 @@ jobs:
       - name: Run tests
         run: docker run task-planer:test
     env:
-        secret_key: '12345asdda098098' # ${{ secrets.SECRET_KEY }}
+        SECRET_KEY: '12345asdda098098' # ${{ secrets.SECRET_KEY }}
