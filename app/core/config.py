@@ -14,14 +14,14 @@ class Config(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "TaskPlaningAPI"
-    debug: bool = False
-    db_url: str = ""
-    db_password: str = ""
-    db_name: str = ""
-    secret_key: SecretStr
-    algorithm: str = "HS256"
-    access_token_expire_mintues: int = 15
+    APP_NAME: str = "TaskPlaningAPI"
+    DEBUG: bool = False
+    DB_URL: str = ""
+    DB_PASSWORD: str = ""
+    DB_NAME: str = ""
+    SECRET_KEY: SecretStr
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINTUES: int = 15
 
 
 config = Config() # type: ignore[call-arg]

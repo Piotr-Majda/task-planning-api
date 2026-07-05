@@ -15,7 +15,7 @@ from app.api.v1.auth import router as auth
 from app.exceptions.base_exceptions import BusinessException
 
 
-logger = setup_logging(config.app_name)
+logger = setup_logging(config.APP_NAME)
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     yield
     engine.dispose()
 
-app = FastAPI(title=config.app_name, lifespan=lifespan)
+app = FastAPI(title=config.APP_NAME, lifespan=lifespan)
 app.include_router(task, prefix="/api/v1")
 app.include_router(project, prefix="/api/v1")
 app.include_router(users, prefix="/api/v1")

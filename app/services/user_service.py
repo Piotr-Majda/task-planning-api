@@ -40,7 +40,7 @@ class UserService:
             raise UserNotFound()
         if not verify_password(password, str(user.password_hashed)):
             raise InvalidPassword()
-        access_token_expires = timedelta(minutes=config.access_token_expire_mintues)
+        access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINTUES)
         access_token = create_access_token(
             data={"sub": str(user.id)},
             expires_delta=access_token_expires

@@ -22,13 +22,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         expire = datetime.datetime.now(UTC) + expires_delta
     else:
         expire = datetime.datetime.now(UTC) + timedelta(
-            minutes=config.access_token_expire_mintues
+            minutes=config.ACCESS_TOKEN_EXPIRE_MINTUES
         )
     to_encode.update({'exp': expire})
     encoded_jwt = jwt.encode(
         to_encode,
-        config.secret_key.get_secret_value(),
-        algorithm=config.algorithm
+        config.SECRET_KEY.get_secret_value(),
+        algorithm=config.ALGORITHM
     )
     return encoded_jwt
 
@@ -36,8 +36,8 @@ def verify_access_token(token: str) -> str | None:
     try:
         payload = jwt.decode(
             token,
-            config.secret_key.get_secret_value(),
-            algorithms=[config.algorithm],
+            config.SECRET_KEY.get_secret_value(),
+            algorithms=[config.ALGORITHM],
             options={'require': ['exp', 'sub']},
         )
     except jwt.InvalidTokenError:

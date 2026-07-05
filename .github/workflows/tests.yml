@@ -11,14 +11,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Build test image
         run: docker build --target test -t task-planer:test .
-      
+
       - name: Run tests
-        run: docker run task-planer:test
-    env:
-        SECRET_KEY: '12345asdda098098' # ${{ secrets.SECRET_KEY }}
+        run: |
+          docker run --rm -e SECRET_KEY="$SECRET_KEY" task-planer:test
