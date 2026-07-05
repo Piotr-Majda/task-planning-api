@@ -1,8 +1,9 @@
 from datetime import datetime
+from email.policy import default
 from typing import Annotated, List
-from sqlalchemy import Enum, ForeignKey, String, func
-from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column
-from app.domain.enums import TaskPriority, TaskStatus
+from sqlalchemy import Enum, ForeignKey, Integer, String, func
+from sqlalchemy.orm import DeclarativeBase, MappedColumn, relationship, Mapped, mapped_column
+from app.domain.enums import TaskPriority, TaskStatus, UserRole
 from app.domain.constants import CONTENT_MAX_LEN, NAME_MAX_LEN
 
 NameAttr = Annotated[str, mapped_column(String(NAME_MAX_LEN), nullable=False)]
@@ -64,8 +65,10 @@ class Project(Base):
 
 class User(Base):
     __tablename__ = 'users'
-    id: Mapped[IdAttr]
-    name: Mapped[NameAttr]
+    id: Mapped[IdAttr] = MappedColumn(Integer, primary_key=True, index=True)
+    name: Mapped[NameAttr] = MappedColumn(String(120), unique=True, nullable=False)
+    role: Mapped[UserRole] = MappedColumn(Enum(UserRole), name='role', default=UserRole.USER) # TODO tmp to not break tests
+    password_hashed: Mapped[String] = MappedColumn(String(200), nullable=False)
     projects: Mapped[List["Project"]] = relationship(
         'Project', 
         back_populates="owner"

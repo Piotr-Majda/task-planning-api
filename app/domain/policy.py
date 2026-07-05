@@ -15,7 +15,7 @@ class ProjectAssignmentPolicy:
         self._user_repo = user_repo
 
     def validate_user_exists(self, id: int, not_found_err: Optional[BusinessException]):
-        not_found_err = not_found_err if not_found_err is not None else UserNotFound(id)
+        not_found_err = not_found_err if not_found_err is not None else UserNotFound()
         user = self._user_repo.get_by_id(id)
         if user is None:
             raise not_found_err

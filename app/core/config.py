@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import SecretStr
 
 
 load_dotenv()
@@ -7,15 +8,20 @@ load_dotenv()
 
 class Config(BaseSettings):
 
-    app_name: str = "TaskSchedulerAPI"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    app_name: str = "TaskPlaningAPI"
     debug: bool = False
-    db_user: str = ""
+    db_url: str = ""
     db_password: str = ""
-    db_name: str = "task.db"
+    db_name: str = ""
+    secret_key: SecretStr
+    algorithm: str = "HS256"
+    access_token_expire_mintues: int = 15
 
-    @property
-    def db_url(self):
-        return f"sqlite:///./{self.db_name}"
 
-
-config = Config()
+config = Config() # type: ignore[call-arg]

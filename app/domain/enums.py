@@ -23,3 +23,8 @@ class SortBy(StrEnum):
 class OrderBy(StrEnum):
     ASC = 'asc'
     DESC = 'desc'
+
+
+class UserRole(StrEnum):
+    ADMIN = 'admin'
+    USER = 'user'

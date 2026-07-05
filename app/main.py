@@ -11,6 +11,7 @@ from app.db.schema import Base
 from app.api.v1.tasks import router as task
 from app.api.v1.projects import router as project
 from app.api.v1.users import router as users
+from app.api.v1.auth import router as auth
 from app.exceptions.base_exceptions import BusinessException
 
 
@@ -21,13 +22,13 @@ logger = setup_logging(config.app_name)
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     yield
-    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
-
-app = FastAPI(title=config.app_name)
+app = FastAPI(title=config.app_name, lifespan=lifespan)
 app.include_router(task, prefix="/api/v1")
 app.include_router(project, prefix="/api/v1")
 app.include_router(users, prefix="/api/v1")
+app.include_router(auth, prefix="/api/v1")
 
 @app.get("/")
 def main():
@@ -60,6 +61,7 @@ async def http_exception_handler(
             "detail": exc.detail,
         }
     return JSONResponse(status_code=exc.status_code, content=content, headers=exc.headers)
+
 
 @app.middleware('http')
 async def handle_logging(request: Request, call_next):

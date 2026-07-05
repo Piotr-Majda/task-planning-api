@@ -18,6 +18,13 @@ class BaseRepository(Generic[T]):
         if column is None:
             raise ValueError(f"Model {self._model} not has id field: {id}")
         return self._db.query(self._model).filter(column == id).first()
+
+    def get_by_attr(self, **kwargs) -> Optional[T]:
+        (name, value), = kwargs.items()
+        column = getattr(self._model, str(name), None)
+        if column is None:
+            raise ValueError(f"Model {self._model} not has field: {name}")
+        return self._db.query(self._model).filter(column == value).first()
     
     def get_all(
         self,

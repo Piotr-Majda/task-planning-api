@@ -92,7 +92,7 @@ def test_users_delete__multiple_owned_tasks_owner_is_set_to_none(client, existin
 def test_users_delete__other_user_owned_task_keeps_owner(client, existing_user, task_payload):
     deleted_user_task = _create_owned_task(client, task_payload, existing_user["id"], name_suffix="deleted-user")
 
-    other_user_r = client.post("/api/v1/users", json={"name": "Other User"})
+    other_user_r = client.post("/api/v1/users", json={"name": "Other User", 'password': 'password-correct'})
     assert other_user_r.status_code == 200, other_user_r.json()
     other_user = other_user_r.json()
     other_user_task = _create_owned_task(client, task_payload, other_user["id"], name_suffix="other-user")
@@ -114,7 +114,7 @@ def test_users_update__name_change__returns_updated_user(client, user_payload):
     assert r.status_code == 200, r.json()
     created_user= r.json()
 
-    r = client.patch(f"/api/v1/users/{created_user['id']}", json={'name': created_user['name'] + "."})
+    r = client.patch(f"/api/v1/users/{created_user['id']}", json={'name': created_user['name'] + ".", 'password': 'correct-password'})
     assert r.status_code == 200, r.json()
     user = r.json()
     assert user['id'] == created_user['id']

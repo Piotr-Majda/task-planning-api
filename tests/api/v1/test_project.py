@@ -137,13 +137,17 @@ def test_project_add_member__project_not_exist__returns_404(client, existing_use
     assert r.status_code == 404, r.json()
 
 
-@pytest.mark.parametrize('create_user', [[{"name": "User X"}] * 11], indirect=True)
-def test_project_list_members__eleven_members_given__returns_11_members(client, existing_project, create_user):
+def factory_users_payload(number: int):
+    return [{"name": f"User {i}", 'password': 'password-correct'} for i in range(1, number + 1)]
+
+
+@pytest.mark.parametrize('create_users', [factory_users_payload(11)], indirect=True)
+def test_project_list_members__eleven_members_given__returns_11_members(client, existing_project, create_users):
     project_id = existing_project['id']
-    for member in create_user:
+    for member in create_users:
         r = client.post(f"/api/v1/projects/{project_id}/members", json={'user_id': member['id']})
         assert r.status_code == 200, r.json()
-    expected_members = sorted([m['id'] for m in create_user])
+    expected_members = sorted([m['id'] for m in create_users])
 
     r = client.get(f"/api/v1/projects/{project_id}/members")
     assert r.status_code == 200, r.json()

@@ -13,6 +13,7 @@ def project_payload() -> dict:
 def user_payload() -> dict:
     return {
         "name": "User X",
+        "password": "correct-password",
     }
 
 
@@ -73,7 +74,7 @@ def create_project(client, request) -> List[dict]:
 
 
 @pytest.fixture(scope='function')
-def create_user(client, request) -> List[dict]:
+def create_users(client, request) -> List[dict]:
     users = request.param
     if not isinstance(users, list):
         raise ValueError("Given value has incorrect format for creating user")

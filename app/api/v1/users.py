@@ -1,20 +1,24 @@
 from typing import Annotated, List
-from fastapi import APIRouter, HTTPException, Query
 
+from fastapi import APIRouter, Query
 
-from app.api.v1.dependencies import user_service_dep, _http_error
+from app.api.v1.dependencies import get_current_admin_user_dep, get_current_user_dep, user_service_dep, _http_error
 from app.exceptions.user_exceptions import UserNotFound
 from app.models.common import SearchQueryParams
 from app.models.users import UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix='/users')
 
+@router.get("/me", response_model=UserRead)
+def me(user: get_current_user_dep):
+    return user
+
 @router.post("/", response_model=UserRead)
-def create_user(params: UserCreate, service: user_service_dep):
+def create_user(params: UserCreate, service: user_service_dep, _user: get_current_admin_user_dep):
     return service.create(params)
 
 @router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: int, service: user_service_dep):
+def get_user(user_id: int, service: user_service_dep, _user: get_current_user_dep):
     try:
         return service.get(user_id)
     except UserNotFound as e:
@@ -24,7 +28,8 @@ def get_user(user_id: int, service: user_service_dep):
 @router.get("/", response_model=List[UserRead])
 def get_users(
     service: user_service_dep,
-    search_query_params: Annotated[SearchQueryParams, Query()]
+    search_query_params: Annotated[SearchQueryParams, Query()],
+    _user: get_current_user_dep
 ):
     return service.list(
         skip=search_query_params.skip,
@@ -36,7 +41,7 @@ def get_users(
 
 
 @router.delete('/{user_id}', status_code=204)
-def delete_user(user_id: int, service: user_service_dep):
+def delete_user(user_id: int, service: user_service_dep, _user: get_current_admin_user_dep):
     """
     Delete project by ID.
     
@@ -58,7 +63,7 @@ def delete_user(user_id: int, service: user_service_dep):
 
 
 @router.patch("/{user_id}", response_model=UserRead)
-def update_user(user_id: int, params: UserUpdate, service: user_service_dep):
+def update_user(user_id: int, params: UserUpdate, service: user_service_dep, _user: get_current_admin_user_dep):
     """
     Status codes:
     - 404: user_id resource not found
