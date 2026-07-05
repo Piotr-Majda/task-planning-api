@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      SECRET_KEY: ci-test-secret-key-not-for-production
       DB_URL: sqlite://
     steps:
       - name: Checkout code
