@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      DB_URL: ${{ secrets.DB_URL }}
+      DB_URL: sqlite://
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
