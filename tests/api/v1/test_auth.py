@@ -26,7 +26,7 @@ def user_ready_for_login(bear_client, login_payload, create_admin_user, admin_us
     token = r.json()['access_token']
     r = bear_client.post(
         "/api/v1/users",
-        json={"name": login_payload["username"], "password": login_payload["password"]},
+        json={"name": login_payload["username"], "password": login_payload["password"], 'role': 'user'},
         headers={'Authorization': f'Bearer {token}'}
     )
     assert r.status_code == 200, r.json()

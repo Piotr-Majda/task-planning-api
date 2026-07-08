@@ -38,9 +38,13 @@ def verify_access_token(token: str) -> str | None:
             token,
             config.SECRET_KEY.get_secret_value(),
             algorithms=[config.ALGORITHM],
-            options={'require': ['exp', 'sub']},
+            options={'require': ['exp', 'sub', 'role']},
         )
     except jwt.InvalidTokenError:
         return None
     else:
         return payload.get('sub')
+
+
+if '__main__' == __file__:
+    print(hash_password('admin1234'))

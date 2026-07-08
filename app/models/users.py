@@ -16,7 +16,7 @@ def ensure_password_format(password: str) -> str:
 
 def ensure_role_format(role: str) -> str:
     try:
-       return str(UserRole(role))
+       return UserRole(role)
     except ValueError as err:
         raise ValueError("User role format incorrect")
 
@@ -37,6 +37,7 @@ class UserRead(BaseModel):
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(max_length=NAME_MAX_LEN, default=None)
     password: Annotated[Optional[str], BeforeValidator(ensure_password_format)] = None
+    role: Annotated[Optional[str], BeforeValidator(ensure_role_format)] = None
 
 
 class Token(BaseModel):

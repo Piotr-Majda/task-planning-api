@@ -92,7 +92,7 @@ def test_users_delete__multiple_owned_tasks_owner_is_set_to_none(client, existin
 def test_users_delete__other_user_owned_task_keeps_owner(client, existing_user, task_payload):
     deleted_user_task = _create_owned_task(client, task_payload, existing_user["id"], name_suffix="deleted-user")
 
-    other_user_r = client.post("/api/v1/users", json={"name": "Other User", 'password': 'password-correct'})
+    other_user_r = client.post("/api/v1/users", json={"name": "Other User", 'password': 'password-correct', 'role': 'user'})
     assert other_user_r.status_code == 200, other_user_r.json()
     other_user = other_user_r.json()
     other_user_task = _create_owned_task(client, task_payload, other_user["id"], name_suffix="other-user")

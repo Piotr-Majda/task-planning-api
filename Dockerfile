@@ -23,7 +23,7 @@ RUN uv sync
 ENV PATH="/app/.venv/bin:${PATH}"
 
 # ============ PRODUCTION STAGE ============
-FROM base AS app
+FROM base AS prod
 
 EXPOSE 80
 

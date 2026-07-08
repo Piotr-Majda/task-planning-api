@@ -1,3 +1,4 @@
+import secrets
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr
@@ -22,6 +23,7 @@ class Config(BaseSettings):
     SECRET_KEY: SecretStr
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINTUES: int = 15
+    FRONTEND_URL: str =  "http://localhost"
 
 
 config = Config() # type: ignore[call-arg]

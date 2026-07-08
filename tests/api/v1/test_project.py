@@ -138,7 +138,7 @@ def test_project_add_member__project_not_exist__returns_404(client, existing_use
 
 
 def factory_users_payload(number: int):
-    return [{"name": f"User {i}", 'password': 'password-correct'} for i in range(1, number + 1)]
+    return [{"name": f"User {i}", 'password': 'password-correct', 'role': 'user'} for i in range(1, number + 1)]
 
 
 @pytest.mark.parametrize('create_users', [factory_users_payload(11)], indirect=True)

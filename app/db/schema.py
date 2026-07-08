@@ -67,8 +67,8 @@ class User(Base):
     __tablename__ = 'users'
     id: Mapped[IdAttr] = MappedColumn(Integer, primary_key=True, index=True)
     name: Mapped[NameAttr] = MappedColumn(String(120), unique=True, nullable=False)
-    role: Mapped[UserRole] = MappedColumn(Enum(UserRole), name='role', default=UserRole.USER) # TODO tmp to not break tests
-    password_hashed: Mapped[String] = MappedColumn(String(200), nullable=False)
+    role: Mapped[UserRole] = MappedColumn(Enum(UserRole), name='role')
+    password_hashed: Mapped[String] = MappedColumn(String(255), nullable=False)
     projects: Mapped[List["Project"]] = relationship(
         'Project', 
         back_populates="owner"

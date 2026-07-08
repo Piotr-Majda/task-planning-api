@@ -42,7 +42,7 @@ class UserService:
             raise InvalidPassword()
         access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINTUES)
         access_token = create_access_token(
-            data={"sub": str(user.id)},
+            data={"sub": str(user.id), 'role': user.role},
             expires_delta=access_token_expires
         )
         return Token(access_token=access_token, token_type="bearer")

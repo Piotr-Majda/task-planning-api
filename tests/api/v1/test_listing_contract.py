@@ -20,6 +20,7 @@ def _user_payload(idx: int) -> dict:
     return {
         "name": f"User {idx:02d}",
         "password": "correct-password",
+        'role': 'user',
     }
 
 

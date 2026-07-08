@@ -392,7 +392,7 @@ Common auth-related codes:
 - **Resource-level authorization** — who may update/delete a specific project or task (e.g. project owner, members)
 - **Expanded auth test coverage** — e.g. non-admin rejected on admin-only routes with real tokens
 - Additional task filters (`status`, `project_id`) and list-by-parent endpoint
-- Disable `/docs` in production, rate limiting, health checks, migration strategy
+- Disable `/docs` in production, rate limiting, and stricter operational hardening
 
 ### MVP authorization model (summary)
 
@@ -413,7 +413,7 @@ Tasks and projects are **not** restricted by owner or membership at the API laye
 - Return `role` in `UserRead` for client UI decisions
 - Restrict `role: admin` on user creation to super-admin or seed-only
 - Deployment hardening: disable Swagger in prod, HTTPS, secrets rotation
-- Alembic migrations instead of `create_all` on startup
+- CI/CD migration automation (run `alembic upgrade head` as part of deploy)
 
 ## Local development with Docker
 
@@ -452,6 +452,63 @@ docker compose exec db psql -U your_db_user -d task_planning_dev -c "SELECT id, 
 ```
 
 Replace `your_db_user` / `task_planning_dev` with values from your `.env`.
+
+## Database migrations (Alembic)
+
+Migrations are managed with Alembic. The API no longer creates tables on startup via `create_all`; schema changes should go through revision files in `alembic/versions/`.
+
+### Prerequisites
+
+- `alembic` is installed via project dependencies.
+- `DB_URL` must be set in the environment before running Alembic (`alembic/env.py` reads it directly).
+
+Example local value (running from host against Postgres exposed on `localhost:5432`):
+
+```bash
+DB_URL=postgresql+psycopg2://your_db_user:your_db_password@localhost:5432/task_planning_dev
+```
+
+PowerShell equivalent:
+
+```powershell
+$env:DB_URL="postgresql+psycopg2://your_db_user:your_db_password@localhost:5432/task_planning_dev"
+```
+
+If running Alembic inside Docker Compose network, use host `db` instead of `localhost`.
+
+### Common commands
+
+Create a new revision (autogenerate):
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
+```
+
+Apply all migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+Rollback one migration:
+
+```bash
+uv run alembic downgrade -1
+```
+
+Show current revision:
+
+```bash
+uv run alembic current
+```
+
+### Recommended migration flow
+
+1. Update SQLAlchemy models.
+2. Generate migration with `revision --autogenerate`.
+3. Review generated operations (especially enums, foreign keys, and defaults).
+4. Run `upgrade head` on a fresh local DB to validate bootstrap.
+5. Run tests.
 
 
 ## Future Enhancements

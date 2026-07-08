@@ -14,6 +14,7 @@ def user_payload() -> dict:
     return {
         "name": "User X",
         "password": "correct-password",
+        'role': 'user'
     }
 
 
